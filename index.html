@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>MAFIA EXOTIC — Control de Guarida | OneState RP</title>
 
 <!-- Tailwind CSS -->
@@ -23,6 +23,7 @@
         --ceniza: #71717a;
         --hueso: #e6e4df;
     }
+    html, body{ overflow-x: hidden; }
     body{
         font-family: 'Rajdhani', sans-serif;
         background-color: var(--fondo);
@@ -48,11 +49,13 @@
         border: 1px solid rgba(201,160,74,0.35);
         box-shadow: 0 1px 3px rgba(0,0,0,0.4);
     }
+    @media (max-width: 640px){ .cinta{ display:none; } }
 
     .punto-vivo{
         width:8px; height:8px; border-radius:9999px; background:#22c55e;
         box-shadow: 0 0 0 0 rgba(34,197,94,0.7);
         animation: pulso 1.8s infinite;
+        flex-shrink: 0;
     }
     .punto-vivo.offline{ background:#71717a; animation:none; box-shadow:none; }
     @keyframes pulso{
@@ -62,10 +65,13 @@
     }
 
     .fila-oro{ border-left: 3px solid var(--oro) !important; background: linear-gradient(90deg, rgba(201,160,74,0.08), transparent); }
+    .fila-entregada{ opacity: 0.45; }
+    .fila-entregada .nombre-jugador{ text-decoration: line-through; }
 
     .ocr-overlay{
-        position: fixed; inset: 0; background: rgba(2,2,3,0.9);
+        position: fixed; inset: 0; background: rgba(2,2,3,0.92);
         display:none; align-items:center; justify-content:center; z-index:50;
+        padding: 16px;
     }
     .ocr-overlay.active{ display:flex; }
     .spinner{
@@ -76,14 +82,15 @@
     @keyframes spin{ to{ transform: rotate(360deg); } }
 
     .toast{
-        position: fixed; bottom: 20px; right: 20px; z-index: 60;
-        padding: 12px 20px; border-radius: 6px; font-weight: 700;
-        font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase;
+        position: fixed; bottom: 16px; right: 16px; left: 16px; z-index: 60;
+        padding: 12px 18px; border-radius: 6px; font-weight: 700;
+        font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase;
         box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         border-left: 4px solid transparent;
         transform: translateY(16px); opacity: 0; transition: all 0.25s ease;
-        pointer-events: none; max-width: 320px;
+        pointer-events: none; max-width: 320px; margin-left: auto;
     }
+    @media (min-width: 640px){ .toast{ left: auto; bottom: 20px; right: 20px; } }
     .toast.show{ transform: translateY(0); opacity: 1; }
     .toast.ok{ background:#111114; color:#86efac; border-color:#16a34a; }
     .toast.err{ background:#151013; color:#fca5a5; border-color:var(--carmesi); }
@@ -91,38 +98,53 @@
 
     ::-webkit-scrollbar{ height:6px; width:6px; }
     ::-webkit-scrollbar-thumb{ background:#3f3f46; border-radius:4px; }
+
+    #login-gate input::placeholder{ color:#52525b; }
 </style>
 </head>
-<body class="grano text-zinc-100 min-h-screen p-4 md:p-8">
+<body class="grano text-zinc-100 min-h-screen p-3 sm:p-4 md:p-8">
+
+<!-- ACCESO CON CONTRASEÑA -->
+<div id="login-gate" class="fixed inset-0 z-[100] bg-black flex items-center justify-center p-4">
+    <div class="bg-zinc-950 border border-red-900/50 rounded-lg p-6 sm:p-8 max-w-xs w-full text-center shadow-2xl">
+        <p class="gang-title text-red-600 text-2xl sm:text-3xl mb-1 uppercase">Mafia Exotic</p>
+        <p class="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-widest mb-6">Acceso restringido</p>
+        <input type="password" id="login-password" placeholder="Contraseña de acceso"
+            class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2.5 text-sm text-zinc-200 mb-3 text-center outline-none focus:border-red-700" />
+        <button id="login-btn" class="w-full bg-red-700 hover:bg-red-600 active:bg-red-800 text-white font-bold text-xs uppercase tracking-wide px-4 py-2.5 rounded cursor-pointer transition-colors">Entrar</button>
+        <p id="login-error" class="text-red-500 text-xs mt-3 hidden">Contraseña incorrecta</p>
+    </div>
+</div>
 
 <div id="ocr-overlay" class="ocr-overlay">
-    <div class="bg-zinc-950 border border-red-800/40 rounded-lg p-8 flex flex-col items-center gap-4 max-w-sm text-center">
+    <div class="bg-zinc-950 border border-red-800/40 rounded-lg p-6 sm:p-8 flex flex-col items-center gap-4 max-w-sm w-full text-center">
         <div class="spinner"></div>
-        <p class="font-bold text-red-500 uppercase tracking-[0.15em] text-sm">⏳ Escaneando captura...</p>
-        <p id="ocr-progress" class="text-xs text-zinc-500 mono">Iniciando motor OCR</p>
+        <p class="font-bold text-red-500 uppercase tracking-[0.15em] text-sm">⏳ Escaneando capturas...</p>
+        <p id="ocr-progress" class="text-xs text-zinc-500 mono">Iniciando</p>
     </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
+<div id="app-content" class="hidden">
 <div class="max-w-6xl mx-auto relative z-10">
 
     <!-- ENCABEZADO -->
-    <header class="border-b border-red-900/60 pb-5 mb-8">
+    <header class="border-b border-red-900/60 pb-5 mb-6 sm:mb-8">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-                <p class="text-[11px] tracking-[0.3em] text-red-700 uppercase mb-1">— Expediente de Operaciones —</p>
-                <h1 class="text-4xl md:text-5xl font-black text-red-600 tracking-wide gang-title uppercase leading-none">Mafia Exotic</h1>
-                <p class="text-zinc-500 tracking-[0.2em] text-xs uppercase mt-2">Módulo de Esencia de Cristales · OneState RP</p>
+            <div class="w-full md:w-auto">
+                <p class="text-[10px] md:text-[11px] tracking-[0.25em] md:tracking-[0.3em] text-red-700 uppercase mb-1">— Expediente de Operaciones —</p>
+                <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-red-600 tracking-wide gang-title uppercase leading-none break-words">Mafia Exotic</h1>
+                <p class="text-zinc-500 tracking-[0.15em] md:tracking-[0.2em] text-[10px] md:text-xs uppercase mt-2">Módulo de Esencia de Cristales · OneState RP</p>
             </div>
 
             <!-- SEÑAL EN VIVO + RELOJ -->
-            <div class="bg-zinc-950/80 border border-zinc-800 rounded-lg px-4 py-3 flex flex-col items-end gap-1 min-w-[220px]">
+            <div class="bg-zinc-950/80 border border-zinc-800 rounded-lg px-4 py-3 flex flex-col items-start md:items-end gap-1 w-full md:w-auto md:min-w-[220px]">
                 <div class="flex items-center gap-2">
                     <span id="punto-señal" class="punto-vivo offline"></span>
                     <span id="texto-señal" class="text-[11px] tracking-widest text-zinc-400 uppercase mono">Conectando señal...</span>
                 </div>
-                <p id="reloj" class="mono text-red-500 font-bold text-lg tracking-wider">--:--:-- - --/--/----</p>
+                <p id="reloj" class="mono text-red-500 font-bold text-base sm:text-lg tracking-wider">--:--:-- - --/--/----</p>
             </div>
         </div>
     </header>
@@ -130,19 +152,19 @@
     <!-- ZONA DE CARGA + ENTRADA MANUAL -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
 
-        <!-- CARGA DE CAPTURA (OCR) -->
-        <div class="bg-zinc-950/60 border border-dashed border-red-900/50 rounded-lg p-4 flex items-center gap-4">
+        <!-- CARGA DE CAPTURAS (OCR) -->
+        <div class="bg-zinc-950/60 border border-dashed border-red-900/50 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <div class="flex-1">
                 <p class="text-xs text-zinc-500 uppercase tracking-wider">¿Nueva entrega?</p>
-                <p class="text-sm font-bold text-red-400 mb-2">Sube la captura de la interfaz</p>
-                <select id="columna-select" class="bg-zinc-900 border border-zinc-700 rounded text-[11px] text-zinc-400 px-2 py-1">
+                <p class="text-sm font-bold text-red-400 mb-2">Sube una o varias capturas</p>
+                <select id="columna-select" class="w-full sm:w-auto bg-zinc-900 border border-zinc-700 rounded text-[11px] text-zinc-400 px-2 py-1.5">
                     <option value="almacenamiento" selected>Columna: En almacenamiento</option>
                     <option value="refinadores">Columna: Cargado en refinadores</option>
                     <option value="transferido">Columna: Transferido para clasif.</option>
                     <option value="entregado">Columna: Entregado</option>
                 </select>
             </div>
-            <input type="file" id="screenshot-input" accept="image/*" class="text-xs text-zinc-500 file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wide file:bg-red-700 file:text-white hover:file:bg-red-600 file:cursor-pointer"/>
+            <input type="file" id="screenshot-input" accept="image/*" multiple class="w-full sm:w-auto text-xs text-zinc-500 file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wide file:bg-red-700 file:text-white hover:file:bg-red-600 file:cursor-pointer"/>
         </div>
 
         <!-- ENTRADA MANUAL -->
@@ -160,30 +182,31 @@
 
     <!-- ACCIONES -->
     <div class="mb-6 flex flex-col sm:flex-row justify-end gap-3">
-        <button id="btn-reiniciar" class="bg-zinc-950 border border-zinc-800 hover:border-red-800 hover:text-red-500 text-zinc-500 font-bold py-2 px-6 rounded transition-colors flex items-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
+        <button id="btn-reiniciar" class="bg-zinc-950 border border-zinc-800 hover:border-red-800 hover:text-red-500 text-zinc-500 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
             🗑️ Reiniciar Registro
         </button>
-        <button id="btn-exportar" class="bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-2 px-6 rounded transition-colors flex items-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
+        <button id="btn-exportar" class="bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
             📷 Descargar Reporte JPG
         </button>
     </div>
 
     <!-- REPORTE VISUAL -->
-    <div id="reporte-visual" class="relative grid grid-cols-1 md:grid-cols-2 gap-8 p-5 bg-[#050506] border border-zinc-800 rounded-xl">
+    <div id="reporte-visual" class="relative grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-3 sm:p-5 bg-[#050506] border border-zinc-800 rounded-xl">
         <div class="cinta" style="top:-9px; left:24px; transform: rotate(-4deg);"></div>
         <div class="cinta" style="top:-9px; right:24px; transform: rotate(4deg);"></div>
 
         <!-- TOP 8 -->
-        <div class="bg-zinc-950/70 border-t-4 border-red-700 p-4 rounded-lg shadow-xl">
-            <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-red-950/50 to-transparent p-2 rounded">
-                <h2 class="text-lg font-black tracking-wider text-red-500 uppercase">🔥 Top 8 Contribuyentes Guarida</h2>
-                <span class="text-[10px] bg-red-700 text-white font-black px-2 py-0.5 rounded uppercase tracking-wide">Activos</span>
+        <div class="bg-zinc-950/70 border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
+            <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-red-950/50 to-transparent p-2 rounded gap-2">
+                <h2 class="text-sm sm:text-lg font-black tracking-wider text-red-500 uppercase">🔥 Top 8 Contribuyentes</h2>
+                <span class="text-[9px] sm:text-[10px] bg-red-700 text-white font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Activos</span>
             </div>
+            <p class="text-[10px] text-zinc-600 mb-2 px-1">Marca la casilla cuando ya se le repartió su parte.</p>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left border-collapse text-xs sm:text-sm">
                     <thead>
-                        <tr class="border-b border-zinc-800 text-zinc-500 text-[11px] tracking-widest uppercase">
-                            <th class="py-2">#</th>
+                        <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
+                            <th class="py-2 pr-1">#</th>
                             <th>Jugador</th>
                             <th class="text-right">Esencia</th>
                             <th class="w-6"></th>
@@ -195,16 +218,16 @@
         </div>
 
         <!-- OTROS MIEMBROS -->
-        <div class="bg-zinc-950/70 border-t-4 border-zinc-700 p-4 rounded-lg shadow-xl">
-            <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-zinc-900/60 to-transparent p-2 rounded">
-                <h2 class="text-lg font-black tracking-wider text-zinc-400 uppercase">💀 Otros Miembros en Registro</h2>
-                <span class="text-[10px] bg-zinc-700 text-zinc-200 font-black px-2 py-0.5 rounded uppercase tracking-wide">Bajo Aporte</span>
+        <div class="bg-zinc-950/70 border-t-4 border-zinc-700 p-3 sm:p-4 rounded-lg shadow-xl">
+            <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-zinc-900/60 to-transparent p-2 rounded gap-2">
+                <h2 class="text-sm sm:text-lg font-black tracking-wider text-zinc-400 uppercase">💀 Otros Miembros</h2>
+                <span class="text-[9px] sm:text-[10px] bg-zinc-700 text-zinc-200 font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Bajo Aporte</span>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left border-collapse text-xs sm:text-sm">
                     <thead>
-                        <tr class="border-b border-zinc-800 text-zinc-500 text-[11px] tracking-widest uppercase">
-                            <th class="py-2">#</th>
+                        <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
+                            <th class="py-2 pr-1">#</th>
                             <th>Jugador</th>
                             <th class="text-right">Esencia</th>
                             <th class="w-6"></th>
@@ -217,14 +240,14 @@
     </div>
 
     <!-- REVISIÓN OCR -->
-    <div id="ocr-review" class="hidden mt-8 bg-zinc-950/70 border-t-4 border-yellow-500 p-4 rounded-lg shadow-xl">
-        <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-yellow-950/30 to-transparent p-2 rounded">
-            <h2 class="text-base font-black tracking-wider text-yellow-400 uppercase">⚠️ Revisa lo que detectó el escaneo</h2>
-            <span class="text-[10px] bg-yellow-500 text-black font-black px-2 py-0.5 rounded uppercase tracking-wide">Confirmar</span>
+    <div id="ocr-review" class="hidden mt-8 bg-zinc-950/70 border-t-4 border-yellow-500 p-3 sm:p-4 rounded-lg shadow-xl">
+        <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-yellow-950/30 to-transparent p-2 rounded gap-2">
+            <h2 class="text-sm sm:text-base font-black tracking-wider text-yellow-400 uppercase">⚠️ Revisa lo que detectó el escaneo</h2>
+            <span class="text-[9px] sm:text-[10px] bg-yellow-500 text-black font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Confirmar</span>
         </div>
-        <p class="text-xs text-zinc-500 mb-3">Corrige nombres o cantidades antes de aplicar. Se sobreescribe solo si el nuevo valor es mayor al guardado.</p>
+        <p class="text-[11px] sm:text-xs text-zinc-500 mb-3">El escaneo puede confundir letras o números. Corrige o borra lo necesario antes de aplicar.</p>
         <div id="ocr-review-list" class="space-y-2 mb-4"></div>
-        <div class="flex gap-3">
+        <div class="flex flex-col sm:flex-row gap-3">
             <button id="btn-confirmar-ocr" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-6 rounded text-xs uppercase tracking-wide cursor-pointer">✅ Aplicar al registro</button>
             <button id="btn-cancelar-ocr" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2 px-6 rounded text-xs uppercase tracking-wide cursor-pointer">✖ Cancelar</button>
         </div>
@@ -232,18 +255,19 @@
 
     <p class="text-center text-[11px] text-zinc-700 mt-8 tracking-wide">Mafia Exotic · OneState RP — Panel interno, no oficial.</p>
 </div>
+</div>
 
 <script type="module">
 // ============================================================
-// 🔥 CONFIGURACIÓN DE FIREBASE — PEGA TUS CREDENCIALES AQUÍ 🔥
+// CONFIGURACIÓN DE SERVIDOR (Firebase) — PEGA TUS CREDENCIALES AQUÍ
 // Consola: https://console.firebase.google.com/
-// → Tu proyecto → ⚙️ Configuración del proyecto → Tus apps → SDK de Firebase
+// → Tu proyecto → Configuración del proyecto → Tus apps → SDK de Firebase
 // Copia el objeto "firebaseConfig" que te da la consola y reemplaza el de abajo.
 // Recuerda: en Realtime Database > Reglas, deja lectura/escritura abiertas
 // para pruebas, o protégelas con Firebase Auth si varias personas van a escribir.
 // ============================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
+apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
   authDomain: "mafia-exotic-app.firebaseapp.com",
   databaseURL: "https://mafia-exotic-app-default-rtdb.firebaseio.com",
   projectId: "mafia-exotic-app",
@@ -258,12 +282,47 @@ const FIREBASE_LISTO = firebaseConfig.apiKey !== "TU_API_KEY_AQUI";
 const VEINTICUATRO_HORAS_MS = 86400000;
 const CLAVE_LOCAL_DATOS = 'onestate_guarida_data_v2';
 const CLAVE_LOCAL_RESET = 'onestate_guarida_last_reset_v2';
+const CLAVE_ACCESO = 'exoticmafiatop1';
+const CLAVE_LOCAL_UNLOCK = 'onestate_unlocked_v1';
 
 let db = null, refJugadores = null, refLastReset = null;
 let fbFns = null; // funciones modulares de firebase-database, cargadas dinámicamente
 
-let pandillaData = []; // { name, crystals } — siempre la fuente que se renderiza
+let pandillaData = []; // { name, crystals, entregado } — siempre la fuente que se renderiza
 let ocrPendiente = [];
+
+// ---------- ACCESO CON CONTRASEÑA ----------
+function iniciarApp() {
+    document.getElementById('login-gate').classList.add('hidden');
+    document.getElementById('app-content').classList.remove('hidden');
+    if (FIREBASE_LISTO) {
+        inicializarFirebase();
+    } else {
+        marcarSeñal(false, 'Modo local (sin conexión)');
+        activarModoLocal();
+    }
+}
+
+function intentarLogin() {
+    const campo = document.getElementById('login-password');
+    if (campo.value === CLAVE_ACCESO) {
+        localStorage.setItem(CLAVE_LOCAL_UNLOCK, '1');
+        iniciarApp();
+    } else {
+        document.getElementById('login-error').classList.remove('hidden');
+        campo.value = '';
+        campo.focus();
+    }
+}
+
+document.getElementById('login-btn').addEventListener('click', intentarLogin);
+document.getElementById('login-password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') intentarLogin();
+});
+
+if (localStorage.getItem(CLAVE_LOCAL_UNLOCK) === '1') {
+    iniciarApp();
+}
 
 // ---------- INICIALIZAR FIREBASE (si hay credenciales) ----------
 async function inicializarFirebase() {
@@ -280,18 +339,18 @@ async function inicializarFirebase() {
 
         fb.onValue(refJugadores, (snapshot) => {
             const val = snapshot.val() || {};
-            pandillaData = Object.values(val).map(j => ({ name: j.name, crystals: j.crystals }));
+            pandillaData = Object.values(val).map(j => ({ name: j.name, crystals: j.crystals, entregado: !!j.entregado }));
             renderTablas();
         }, (err) => {
-            console.error('Firebase onValue error:', err);
+            console.error('Error de datos en vivo:', err);
             marcarSeñal(false, 'Error de conexión');
         });
 
-        marcarSeñal(true, 'Firebase · En vivo');
+        marcarSeñal(true, 'Conectado · En vivo');
     } catch (err) {
-        console.error('No se pudo inicializar Firebase:', err);
-        marcarSeñal(false, 'Firebase no disponible');
-        mostrarToast('No se pudo conectar a Firebase, revisa tus credenciales', 'err');
+        console.error('No se pudo inicializar la conexión:', err);
+        marcarSeñal(false, 'Sin conexión · modo local');
+        mostrarToast('No se pudo conectar al servidor, usando modo local', 'err');
         activarModoLocal();
     }
 }
@@ -311,7 +370,7 @@ async function verificarReinicio24h() {
     }
 }
 
-// ---------- MODO LOCAL (respaldo mientras no hay credenciales Firebase) ----------
+// ---------- MODO LOCAL (respaldo mientras no hay conexión al servidor) ----------
 function activarModoLocal() {
     cargarLocal();
     verificarReinicioLocal24h();
@@ -364,12 +423,12 @@ async function procesarJugador(nombreCrudo, cantidad) {
         const nodo = fbFns.child(refJugadores, clave);
         const snap = await fbFns.get(nodo);
         if (!snap.exists()) {
-            await fbFns.set(nodo, { name: nombre, crystals: cantidad });
+            await fbFns.set(nodo, { name: nombre, crystals: cantidad, entregado: false });
             return 'nuevo';
         }
         const actual = snap.val();
         if (cantidad > actual.crystals) {
-            await fbFns.set(nodo, { name: nombre, crystals: cantidad });
+            await fbFns.set(nodo, { name: nombre, crystals: cantidad, entregado: !!actual.entregado });
             return 'actualizado';
         }
         return 'ignorado';
@@ -379,7 +438,7 @@ async function procesarJugador(nombreCrudo, cantidad) {
     const existente = pandillaData.find(p => p.name.toLowerCase() === nombre.toLowerCase());
     let resultado;
     if (!existente) {
-        pandillaData.push({ name: nombre, crystals: cantidad });
+        pandillaData.push({ name: nombre, crystals: cantidad, entregado: false });
         resultado = 'nuevo';
     } else if (cantidad > existente.crystals) {
         existente.crystals = cantidad;
@@ -401,6 +460,25 @@ async function eliminarJugador(nombre) {
     pandillaData = pandillaData.filter(p => p.name !== nombre);
     renderTablas();
     guardarLocal();
+}
+
+async function toggleEntregado(nombre, valor) {
+    if (FIREBASE_LISTO && db) {
+        const clave = normalizarClave(nombre);
+        const nodo = fbFns.child(refJugadores, clave);
+        const snap = await fbFns.get(nodo);
+        if (snap.exists()) {
+            const actual = snap.val();
+            await fbFns.set(nodo, { ...actual, entregado: valor });
+        }
+        return;
+    }
+    const jugador = pandillaData.find(p => p.name === nombre);
+    if (jugador) {
+        jugador.entregado = valor;
+        guardarLocal();
+        renderTablas();
+    }
 }
 
 async function reiniciarTodo() {
@@ -454,14 +532,24 @@ function renderTablas() {
 
     for (let i = 0; i < 8; i++) {
         if (!ordenado[i]) break;
+        const jugador = ordenado[i];
         const esOro = i === 0;
+        const filaEntregada = jugador.entregado ? 'fila-entregada' : '';
         top8Body.innerHTML += `
-            <tr class="hover:bg-zinc-800/30 transition-colors ${esOro ? 'fila-oro' : ''}">
-                <td class="py-3 font-bold ${esOro ? 'text-[color:var(--oro)]' : 'text-red-500'}">#${i + 1}</td>
-                <td class="font-bold">${esOro ? '👑 ' : ''}${escapeHTML(ordenado[i].name)}</td>
-                <td class="text-right font-black text-zinc-300">${ordenado[i].crystals.toLocaleString()}</td>
+            <tr class="hover:bg-zinc-800/30 transition-colors ${esOro ? 'fila-oro' : ''} ${filaEntregada}">
+                <td class="py-3 pr-1 font-bold ${esOro ? 'text-[color:var(--oro)]' : 'text-red-500'}">#${i + 1}</td>
+                <td class="font-bold">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" data-nombre="${escapeHTML(jugador.name)}" class="chk-entregado accent-green-600 w-4 h-4 shrink-0" ${jugador.entregado ? 'checked' : ''}/>
+                        <span class="nombre-jugador">${esOro ? '👑 ' : ''}${escapeHTML(jugador.name)}</span>
+                    </label>
+                </td>
+                <td class="text-right font-black text-zinc-300 whitespace-nowrap">
+                    ${jugador.crystals.toLocaleString()}
+                    ${jugador.entregado ? '<span class="ml-1.5 text-[8px] sm:text-[9px] bg-green-800/60 text-green-300 px-1.5 py-0.5 rounded uppercase tracking-wide align-middle">Repartido</span>' : ''}
+                </td>
                 <td class="text-right boton-borrar-fila">
-                    <button data-nombre="${escapeHTML(ordenado[i].name)}" class="btn-borrar text-zinc-600 hover:text-red-500 text-xs cursor-pointer" title="Borrar jugador">✖</button>
+                    <button data-nombre="${escapeHTML(jugador.name)}" class="btn-borrar text-zinc-600 hover:text-red-500 text-xs cursor-pointer" title="Borrar jugador">✖</button>
                 </td>
             </tr>`;
     }
@@ -470,7 +558,7 @@ function renderTablas() {
         if (!ordenado[i]) break;
         otros8Body.innerHTML += `
             <tr class="hover:bg-zinc-800/30 transition-colors text-zinc-400">
-                <td class="py-3 font-bold text-zinc-600">#${i + 1}</td>
+                <td class="py-3 pr-1 font-bold text-zinc-600">#${i + 1}</td>
                 <td>${escapeHTML(ordenado[i].name)}</td>
                 <td class="text-right font-bold text-zinc-500">${ordenado[i].crystals.toLocaleString()}</td>
                 <td class="text-right boton-borrar-fila">
@@ -484,6 +572,13 @@ function renderTablas() {
             const nombre = btn.getAttribute('data-nombre');
             if (!confirm(`¿Quitar a "${nombre}" del registro?`)) return;
             eliminarJugador(nombre).then(() => mostrarToast(`Jugador "${nombre}" eliminado`, 'info'));
+        });
+    });
+
+    document.querySelectorAll('.chk-entregado').forEach(chk => {
+        chk.addEventListener('change', () => {
+            const nombre = chk.getAttribute('data-nombre');
+            toggleEntregado(nombre, chk.checked);
         });
     });
 }
@@ -540,49 +635,69 @@ document.getElementById('form-manual').addEventListener('submit', async (e) => {
     cantidadInput.value = '';
 });
 
-// ---------- OCR (Tesseract.js) — parser por coordenadas, sin cambios de lógica ----------
+// ---------- OCR (Tesseract.js) — parser por coordenadas, ahora con varias imágenes ----------
 const inputArchivo = document.getElementById('screenshot-input');
 const overlay = document.getElementById('ocr-overlay');
 const progresoTexto = document.getElementById('ocr-progress');
 const selectorColumna = document.getElementById('columna-select');
 
 inputArchivo.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const archivos = Array.from(e.target.files || []);
+    if (archivos.length === 0) return;
 
     overlay.classList.add('active');
-    progresoTexto.textContent = 'Iniciando motor OCR...';
+    let filasCombinadas = [];
 
-    try {
-        const dims = await obtenerDimensiones(file);
-        const resultado = await Tesseract.recognize(file, 'spa+eng', {
-            logger: (info) => {
-                if (info.status && info.progress != null) {
-                    const pct = Math.round(info.progress * 100);
-                    progresoTexto.textContent = `${traducirEstado(info.status)}... ${pct}%`;
+    for (let i = 0; i < archivos.length; i++) {
+        const file = archivos[i];
+        const prefijo = archivos.length > 1 ? `Imagen ${i + 1}/${archivos.length}: ` : '';
+        progresoTexto.textContent = `${prefijo}iniciando...`;
+
+        try {
+            const dims = await obtenerDimensiones(file);
+            const resultado = await Tesseract.recognize(file, 'spa+eng', {
+                logger: (info) => {
+                    if (info.status && info.progress != null) {
+                        const pct = Math.round(info.progress * 100);
+                        progresoTexto.textContent = `${prefijo}${traducirEstado(info.status)}... ${pct}%`;
+                    }
                 }
-            }
-        });
+            });
 
-        const palabras = resultado.data.words || [];
-        const filas = parsearPorColumnas(palabras, dims.width, dims.height, selectorColumna.value);
-
-        overlay.classList.remove('active');
-        inputArchivo.value = '';
-
-        if (filas.length === 0) {
-            mostrarToast('No se detectaron filas de jugadores en la imagen', 'err');
-            return;
+            const palabras = resultado.data.words || [];
+            const filas = parsearPorColumnas(palabras, dims.width, dims.height, selectorColumna.value);
+            filasCombinadas = combinarFilas(filasCombinadas, filas);
+        } catch (err) {
+            console.error(err);
+            mostrarToast(`Error al procesar la imagen ${i + 1}`, 'err');
         }
-
-        ocrPendiente = filas;
-        mostrarRevisionOCR(filas);
-    } catch (err) {
-        console.error(err);
-        overlay.classList.remove('active');
-        mostrarToast('Error al procesar la imagen', 'err');
     }
+
+    overlay.classList.remove('active');
+    inputArchivo.value = '';
+
+    if (filasCombinadas.length === 0) {
+        mostrarToast('No se detectaron filas de jugadores en las imágenes', 'err');
+        return;
+    }
+
+    ocrPendiente = filasCombinadas;
+    mostrarRevisionOCR(filasCombinadas);
 });
+
+// Combina resultados de varias capturas: si el mismo jugador aparece en más
+// de una imagen, se queda con el valor más alto (misma regla que el registro).
+function combinarFilas(base, nuevas) {
+    const mapa = new Map(base.map(f => [f.name.toLowerCase(), f]));
+    for (const fila of nuevas) {
+        const clave = fila.name.toLowerCase();
+        const existente = mapa.get(clave);
+        if (!existente || fila.crystals > existente.crystals) {
+            mapa.set(clave, fila);
+        }
+    }
+    return Array.from(mapa.values());
+}
 
 function obtenerDimensiones(file) {
     return new Promise((resolve, reject) => {
@@ -599,7 +714,7 @@ function traducirEstado(status) {
         'loading tesseract core': 'Cargando motor',
         'initializing tesseract': 'Inicializando',
         'loading language traineddata': 'Cargando idioma',
-        'initializing api': 'Preparando API',
+        'initializing api': 'Preparando',
         'recognizing text': 'Leyendo texto'
     };
     return mapa[status] || status;
@@ -607,8 +722,8 @@ function traducirEstado(status) {
 
 // Bandas horizontales (fracción del ancho de imagen) calibradas sobre la
 // pantalla de "Participantes" de la pandilla en OneState RP.
-const BANDA_MENU_LATERAL = 0.15;
-const BANDA_NOMBRE = [0.15, 0.50];
+const BANDA_MENU_LATERAL = 0.19;
+const BANDA_NOMBRE = [0.19, 0.50];
 const BANDAS_COLUMNAS = {
     almacenamiento: [0.50, 0.615],
     refinadores:    [0.615, 0.72],
@@ -618,16 +733,52 @@ const BANDAS_COLUMNAS = {
 const PALABRAS_PROHIBIDAS = [
     'PARTICIPANTE', 'RESULTADO', 'PANDILLA', 'ESTADISTIC', 'ESTADÍSTIC',
     'HISTORIAL', 'CLASIFICACI', 'TOTAL', 'ACTUALIZ', 'AVANZAR', 'ATRAS',
-    'ATRÁS', 'LABORATORIO', 'DIPLOMACIA', 'TERRITORIO', 'CONTRATO',
-    'TAREA', 'TIENDA', 'MIEMBRO', 'SINDICATO', 'ALMACENAM', 'REFINADOR',
-    'TRANSFERIDO', 'ENTREGADO', 'CAPTURA', 'CARGADO'
+    'ATRÁS', 'LABORATORIO', 'DIPLOMACIA', 'DIFLOMACIA', 'TERRITORIO',
+    'CONTRATO', 'TAREA', 'TIENDA', 'MIEMBRO', 'SINDICATO', 'ALMACENAM',
+    'REFINADOR', 'TRANSFERIDO', 'ENTREGADO', 'CAPTURA', 'CARGADO'
 ];
+
+// Un token de la banda de "nombre" solo se acepta si: tiene al menos 2
+// caracteres, contiene alguna letra, no es una palabra del menú/interfaz,
+// y (cuando Tesseract da confianza) esa confianza no es demasiado baja —
+// así se filtran los símbolos y restos de menú que antes ensuciaban el nombre.
+function esTokenDeNombreValido(w) {
+    const t = w.texto;
+    if (t.length < 2) return false;
+    if (!/[A-Za-zÀ-ÿ]/.test(t)) return false;
+    if (typeof w.confianza === 'number' && w.confianza < 45) return false;
+    const tUpper = t.toUpperCase();
+    if (PALABRAS_PROHIBIDAS.some(kw => tUpper.includes(kw) || (tUpper.length >= 4 && kw.includes(tUpper)))) return false;
+    return true;
+}
+
+// El punto de "en línea/desconectado" junto al avatar, y a veces el borde
+// del propio avatar, quedan justo al inicio de la banda de nombre y el OCR
+// a veces los lee como una letra o par de letras sueltas (ej. "EA", "Y",
+// "a", "nn"). Esa letra suelta queda separada del nombre real por un salto
+// horizontal mucho más grande que el espacio normal entre palabras de un
+// mismo nombre, así que se puede detectar y descartar por geometría.
+function quitarTokenAisladoInicial(tokens, ancho) {
+    let limpio = tokens;
+    while (limpio.length > 1) {
+        const primero = limpio[0];
+        const segundo = limpio[1];
+        const salto = segundo.x0 - primero.x1;
+        const saltoMinimoSospechoso = Math.max(38, ancho * 0.022);
+        if (primero.texto.length <= 3 && salto > saltoMinimoSospechoso) {
+            limpio = limpio.slice(1);
+        } else {
+            break;
+        }
+    }
+    return limpio;
+}
 
 function parsearPorColumnas(palabras, ancho, alto, columnaElegida) {
     const bandaValor = BANDAS_COLUMNAS[columnaElegida] || BANDAS_COLUMNAS.almacenamiento;
 
     const utiles = palabras
-        .map(w => ({ texto: (w.text || '').trim(), x0: w.bbox.x0, x1: w.bbox.x1, y0: w.bbox.y0, y1: w.bbox.y1 }))
+        .map(w => ({ texto: (w.text || '').trim(), x0: w.bbox.x0, x1: w.bbox.x1, y0: w.bbox.y0, y1: w.bbox.y1, confianza: w.confidence }))
         .filter(w => w.texto.length > 0)
         .filter(w => /[A-Za-zÀ-ÿ0-9]/.test(w.texto))
         .filter(w => w.x0 >= BANDA_MENU_LATERAL * ancho);
@@ -658,10 +809,11 @@ function parsearPorColumnas(palabras, ancho, alto, columnaElegida) {
     for (const fila of filas) {
         fila.sort((a, b) => a.x0 - b.x0);
 
-        const tokensNombre = fila.filter(w => {
+        let tokensNombre = fila.filter(w => {
             const cx = (w.x0 + w.x1) / 2 / ancho;
-            return cx >= BANDA_NOMBRE[0] && cx <= BANDA_NOMBRE[1] && /[A-Za-zÀ-ÿ]/.test(w.texto);
+            return cx >= BANDA_NOMBRE[0] && cx <= BANDA_NOMBRE[1] && esTokenDeNombreValido(w);
         });
+        tokensNombre = quitarTokenAisladoInicial(tokensNombre, ancho);
 
         let nombre = tokensNombre.map(w => w.texto).join(' ').trim();
         nombre = nombre.replace(/[|_\-•:.]+$/g, '').replace(/^[|_\-•:.]+/g, '').trim();
@@ -706,10 +858,10 @@ function mostrarRevisionOCR(filas) {
         lista.innerHTML += `
             <div class="flex items-center gap-2 bg-zinc-950/60 border border-zinc-800 rounded p-2">
                 <input type="text" value="${escapeHTML(fila.name)}" data-idx="${idx}" data-field="name"
-                    class="ocr-input-name bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm flex-1 text-zinc-200" />
+                    class="ocr-input-name bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs sm:text-sm flex-1 min-w-0 text-zinc-200" />
                 <input type="number" value="${fila.crystals}" data-idx="${idx}" data-field="crystals"
-                    class="ocr-input-crystals bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm w-28 text-right text-zinc-200" />
-                <button data-idx="${idx}" class="btn-quitar-ocr text-red-500 hover:text-red-400 text-sm px-2 cursor-pointer">✖</button>
+                    class="ocr-input-crystals bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs sm:text-sm w-20 sm:w-28 text-right text-zinc-200" />
+                <button data-idx="${idx}" class="btn-quitar-ocr text-red-500 hover:text-red-400 text-sm px-1 sm:px-2 cursor-pointer shrink-0">✖</button>
             </div>`;
     });
 
@@ -754,15 +906,6 @@ function cancelarOCR() {
     ocrPendiente = [];
     document.getElementById('ocr-review').classList.add('hidden');
     document.getElementById('ocr-review-list').innerHTML = '';
-}
-
-// ---------- INICIALIZAR ----------
-if (FIREBASE_LISTO) {
-    inicializarFirebase();
-} else {
-    marcarSeñal(false, 'Firebase sin configurar · modo local');
-    mostrarToast('Pega tus credenciales de Firebase en el código para activar el modo en vivo', 'info');
-    activarModoLocal();
 }
 </script>
 </body>

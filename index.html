@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAFIA EXOTIC — Control de Guarida | OneState RP</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<!-- Tipografías -->
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- OCR -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<!-- Exportar a JPG (fork "pro" necesario: soporta los colores oklch() que genera Tailwind v4) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/dist/html2canvas-pro.min.js"></script>
+
+<style>
+    :root{
+        --fondo: #050506;
+        --carmesi: #b91c1c;
+        --carmesi-glow: #ef4444;
+        --oro: #c9a04a;
+        --ceniza: #71717a;
+        --hueso: #e6e4df;
+    }
+    body{
+        font-family: 'Rajdhani', sans-serif;
+        background-color: var(--fondo);
+        color: var(--hueso);
+        background-image:
+            radial-gradient(ellipse 80% 50% at 50% -10%, rgba(185,28,28,0.12), transparent),
+            radial-gradient(ellipse 60% 40% at 100% 110%, rgba(120,20,20,0.10), transparent);
+    }
+    .gang-title{ font-family: 'Permanent Marker', cursive; }
+    .mono{ font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; }
+
+    /* Textura de grano sutil sobre toda la página */
+    .grano::before{
+        content:"";
+        position: fixed; inset:0; z-index: 0; pointer-events:none;
+        opacity: 0.05; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    }
+
+    .cinta{
+        position:absolute; width:70px; height:18px;
+        background: rgba(201,160,74,0.18);
+        border: 1px solid rgba(201,160,74,0.35);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    .punto-vivo{
+        width:8px; height:8px; border-radius:9999px; background:#22c55e;
+        box-shadow: 0 0 0 0 rgba(34,197,94,0.7);
+        animation: pulso 1.8s infinite;
+    }
+    .punto-vivo.offline{ background:#71717a; animation:none; box-shadow:none; }
+    @keyframes pulso{
+        0%{ box-shadow: 0 0 0 0 rgba(34,197,94,0.55); }
+        70%{ box-shadow: 0 0 0 7px rgba(34,197,94,0); }
+        100%{ box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+
+    .fila-oro{ border-left: 3px solid var(--oro) !important; background: linear-gradient(90deg, rgba(201,160,74,0.08), transparent); }
+
+    .ocr-overlay{
+        position: fixed; inset: 0; background: rgba(2,2,3,0.9);
+        display:none; align-items:center; justify-content:center; z-index:50;
+    }
+    .ocr-overlay.active{ display:flex; }
+    .spinner{
+        border: 3px solid #27272a; border-top: 3px solid var(--carmesi);
+        border-radius: 50%; width: 44px; height: 44px;
+        animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    .toast{
+        position: fixed; bottom: 20px; right: 20px; z-index: 60;
+        padding: 12px 20px; border-radius: 6px; font-weight: 700;
+        font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        border-left: 4px solid transparent;
+        transform: translateY(16px); opacity: 0; transition: all 0.25s ease;
+        pointer-events: none; max-width: 320px;
+    }
+    .toast.show{ transform: translateY(0); opacity: 1; }
+    .toast.ok{ background:#111114; color:#86efac; border-color:#16a34a; }
+    .toast.err{ background:#151013; color:#fca5a5; border-color:var(--carmesi); }
+    .toast.info{ background:#111114; color:#d4d4d8; border-color:#52525b; }
+
+    ::-webkit-scrollbar{ height:6px; width:6px; }
+    ::-webkit-scrollbar-thumb{ background:#3f3f46; border-radius:4px; }
+</style>
+</head>
+<body class="grano text-zinc-100 min-h-screen p-4 md:p-8">
+
+<div id="ocr-overlay" class="ocr-overlay">
+    <div class="bg-zinc-950 border border-red-800/40 rounded-lg p-8 flex flex-col items-center gap-4 max-w-sm text-center">
+        <div class="spinner"></div>
+        <p class="font-bold text-red-500 uppercase tracking-[0.15em] text-sm">⏳ Escaneando captura...</p>
+        <p id="ocr-progress" class="text-xs text-zinc-500 mono">Iniciando motor OCR</p>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<div class="max-w-6xl mx-auto relative z-10">
+
+    <!-- ENCABEZADO -->
+    <header class="border-b border-red-900/60 pb-5 mb-8">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <p class="text-[11px] tracking-[0.3em] text-red-700 uppercase mb-1">— Expediente de Operaciones —</p>
+                <h1 class="text-4xl md:text-5xl font-black text-red-600 tracking-wide gang-title uppercase leading-none">Mafia Exotic</h1>
+                <p class="text-zinc-500 tracking-[0.2em] text-xs uppercase mt-2">Módulo de Esencia de Cristales · OneState RP</p>
+            </div>
+
+            <!-- SEÑAL EN VIVO + RELOJ -->
+            <div class="bg-zinc-950/80 border border-zinc-800 rounded-lg px-4 py-3 flex flex-col items-end gap-1 min-w-[220px]">
+                <div class="flex items-center gap-2">
+                    <span id="punto-señal" class="punto-vivo offline"></span>
+                    <span id="texto-señal" class="text-[11px] tracking-widest text-zinc-400 uppercase mono">Conectando señal...</span>
+                </div>
+                <p id="reloj" class="mono text-red-500 font-bold text-lg tracking-wider">--:--:-- - --/--/----</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- ZONA DE CARGA + ENTRADA MANUAL -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+
+        <!-- CARGA DE CAPTURA (OCR) -->
+        <div class="bg-zinc-950/60 border border-dashed border-red-900/50 rounded-lg p-4 flex items-center gap-4">
+            <div class="flex-1">
+                <p class="text-xs text-zinc-500 uppercase tracking-wider">¿Nueva entrega?</p>
+                <p class="text-sm font-bold text-red-400 mb-2">Sube la captura de la interfaz</p>
+                <select id="columna-select" class="bg-zinc-900 border border-zinc-700 rounded text-[11px] text-zinc-400 px-2 py-1">
+                    <option value="almacenamiento" selected>Columna: En almacenamiento</option>
+                    <option value="refinadores">Columna: Cargado en refinadores</option>
+                    <option value="transferido">Columna: Transferido para clasif.</option>
+                    <option value="entregado">Columna: Entregado</option>
+                </select>
+            </div>
+            <input type="file" id="screenshot-input" accept="image/*" class="text-xs text-zinc-500 file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wide file:bg-red-700 file:text-white hover:file:bg-red-600 file:cursor-pointer"/>
+        </div>
+
+        <!-- ENTRADA MANUAL -->
+        <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-4">
+            <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Registro manual</p>
+            <form id="form-manual" class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="manual-nombre" placeholder="Nombre / ID del jugador" required
+                    class="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600" />
+                <input type="number" id="manual-cantidad" placeholder="Esencia" required
+                    class="w-full sm:w-28 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600" />
+                <button type="submit" class="bg-red-700 hover:bg-red-600 text-white font-bold text-xs uppercase tracking-wide px-4 py-2 rounded cursor-pointer whitespace-nowrap">Registrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ACCIONES -->
+    <div class="mb-6 flex flex-col sm:flex-row justify-end gap-3">
+        <button id="btn-reiniciar" class="bg-zinc-950 border border-zinc-800 hover:border-red-800 hover:text-red-500 text-zinc-500 font-bold py-2 px-6 rounded transition-colors flex items-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
+            🗑️ Reiniciar Registro
+        </button>
+        <button id="btn-exportar" class="bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-2 px-6 rounded transition-colors flex items-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
+            📷 Descargar Reporte JPG
+        </button>
+    </div>
+
+    <!-- REPORTE VISUAL -->
+    <div id="reporte-visual" class="relative grid grid-cols-1 md:grid-cols-2 gap-8 p-5 bg-[#050506] border border-zinc-800 rounded-xl">
+        <div class="cinta" style="top:-9px; left:24px; transform: rotate(-4deg);"></div>
+        <div class="cinta" style="top:-9px; right:24px; transform: rotate(4deg);"></div>
+
+        <!-- TOP 8 -->
+        <div class="bg-zinc-950/70 border-t-4 border-red-700 p-4 rounded-lg shadow-xl">
+            <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-red-950/50 to-transparent p-2 rounded">
+                <h2 class="text-lg font-black tracking-wider text-red-500 uppercase">🔥 Top 8 Contribuyentes Guarida</h2>
+                <span class="text-[10px] bg-red-700 text-white font-black px-2 py-0.5 rounded uppercase tracking-wide">Activos</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-zinc-500 text-[11px] tracking-widest uppercase">
+                            <th class="py-2">#</th>
+                            <th>Jugador</th>
+                            <th class="text-right">Esencia</th>
+                            <th class="w-6"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-top8" class="divide-y divide-zinc-800/50"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- OTROS MIEMBROS -->
+        <div class="bg-zinc-950/70 border-t-4 border-zinc-700 p-4 rounded-lg shadow-xl">
+            <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-zinc-900/60 to-transparent p-2 rounded">
+                <h2 class="text-lg font-black tracking-wider text-zinc-400 uppercase">💀 Otros Miembros en Registro</h2>
+                <span class="text-[10px] bg-zinc-700 text-zinc-200 font-black px-2 py-0.5 rounded uppercase tracking-wide">Bajo Aporte</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-zinc-500 text-[11px] tracking-widest uppercase">
+                            <th class="py-2">#</th>
+                            <th>Jugador</th>
+                            <th class="text-right">Esencia</th>
+                            <th class="w-6"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-otros8" class="divide-y divide-zinc-800/50"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- REVISIÓN OCR -->
+    <div id="ocr-review" class="hidden mt-8 bg-zinc-950/70 border-t-4 border-yellow-500 p-4 rounded-lg shadow-xl">
+        <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-yellow-950/30 to-transparent p-2 rounded">
+            <h2 class="text-base font-black tracking-wider text-yellow-400 uppercase">⚠️ Revisa lo que detectó el escaneo</h2>
+            <span class="text-[10px] bg-yellow-500 text-black font-black px-2 py-0.5 rounded uppercase tracking-wide">Confirmar</span>
+        </div>
+        <p class="text-xs text-zinc-500 mb-3">Corrige nombres o cantidades antes de aplicar. Se sobreescribe solo si el nuevo valor es mayor al guardado.</p>
+        <div id="ocr-review-list" class="space-y-2 mb-4"></div>
+        <div class="flex gap-3">
+            <button id="btn-confirmar-ocr" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-6 rounded text-xs uppercase tracking-wide cursor-pointer">✅ Aplicar al registro</button>
+            <button id="btn-cancelar-ocr" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2 px-6 rounded text-xs uppercase tracking-wide cursor-pointer">✖ Cancelar</button>
+        </div>
+    </div>
+
+    <p class="text-center text-[11px] text-zinc-700 mt-8 tracking-wide">Mafia Exotic · OneState RP — Panel interno, no oficial.</p>
+</div>
+
+<script type="module">
+// ============================================================
+// 🔥 CONFIGURACIÓN DE FIREBASE — PEGA TUS CREDENCIALES AQUÍ 🔥
+// Consola: https://console.firebase.google.com/
+// → Tu proyecto → ⚙️ Configuración del proyecto → Tus apps → SDK de Firebase
+// Copia el objeto "firebaseConfig" que te da la consola y reemplaza el de abajo.
+// Recuerda: en Realtime Database > Reglas, deja lectura/escritura abiertas
+// para pruebas, o protégelas con Firebase Auth si varias personas van a escribir.
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
+  authDomain: "mafia-exotic-app.firebaseapp.com",
+  databaseURL: "https://mafia-exotic-app-default-rtdb.firebaseio.com",
+  projectId: "mafia-exotic-app",
+  storageBucket: "mafia-exotic-app.firebasestorage.app",
+  messagingSenderId: "782184090517",
+  appId: "1:782184090517:web:873176f8131a40a6f8c49c",
+  measurementId: "G-84EN2TJP19"
+};
+// ============================================================
+
+const FIREBASE_LISTO = firebaseConfig.apiKey !== "TU_API_KEY_AQUI";
+const VEINTICUATRO_HORAS_MS = 86400000;
+const CLAVE_LOCAL_DATOS = 'onestate_guarida_data_v2';
+const CLAVE_LOCAL_RESET = 'onestate_guarida_last_reset_v2';
+
+let db = null, refJugadores = null, refLastReset = null;
+let fbFns = null; // funciones modulares de firebase-database, cargadas dinámicamente
+
+let pandillaData = []; // { name, crystals } — siempre la fuente que se renderiza
+let ocrPendiente = [];
+
+// ---------- INICIALIZAR FIREBASE (si hay credenciales) ----------
+async function inicializarFirebase() {
+    try {
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+        const fb = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+        fbFns = fb;
+        const app = initializeApp(firebaseConfig);
+        db = fb.getDatabase(app);
+        refJugadores = fb.ref(db, 'jugadores');
+        refLastReset = fb.ref(db, 'lastReset');
+
+        await verificarReinicio24h();
+
+        fb.onValue(refJugadores, (snapshot) => {
+            const val = snapshot.val() || {};
+            pandillaData = Object.values(val).map(j => ({ name: j.name, crystals: j.crystals }));
+            renderTablas();
+        }, (err) => {
+            console.error('Firebase onValue error:', err);
+            marcarSeñal(false, 'Error de conexión');
+        });
+
+        marcarSeñal(true, 'Firebase · En vivo');
+    } catch (err) {
+        console.error('No se pudo inicializar Firebase:', err);
+        marcarSeñal(false, 'Firebase no disponible');
+        mostrarToast('No se pudo conectar a Firebase, revisa tus credenciales', 'err');
+        activarModoLocal();
+    }
+}
+
+async function verificarReinicio24h() {
+    const snap = await fbFns.get(refLastReset);
+    const ahora = Date.now();
+    if (!snap.exists()) {
+        await fbFns.set(refLastReset, ahora);
+        return;
+    }
+    const ultimo = snap.val();
+    if (ahora - ultimo >= VEINTICUATRO_HORAS_MS) {
+        await fbFns.remove(refJugadores);
+        await fbFns.set(refLastReset, ahora);
+        mostrarToast('🔄 Reinicio automático de 24h ejecutado', 'info');
+    }
+}
+
+// ---------- MODO LOCAL (respaldo mientras no hay credenciales Firebase) ----------
+function activarModoLocal() {
+    cargarLocal();
+    verificarReinicioLocal24h();
+    renderTablas();
+}
+
+function cargarLocal() {
+    try {
+        const raw = localStorage.getItem(CLAVE_LOCAL_DATOS);
+        pandillaData = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        pandillaData = [];
+    }
+}
+
+function guardarLocal() {
+    try { localStorage.setItem(CLAVE_LOCAL_DATOS, JSON.stringify(pandillaData)); }
+    catch (e) { mostrarToast('No se pudo guardar localmente', 'err'); }
+}
+
+function verificarReinicioLocal24h() {
+    const ahora = Date.now();
+    const ultimo = parseInt(localStorage.getItem(CLAVE_LOCAL_RESET) || '0', 10);
+    if (!ultimo) {
+        localStorage.setItem(CLAVE_LOCAL_RESET, String(ahora));
+        return;
+    }
+    if (ahora - ultimo >= VEINTICUATRO_HORAS_MS) {
+        pandillaData = [];
+        guardarLocal();
+        localStorage.setItem(CLAVE_LOCAL_RESET, String(ahora));
+        mostrarToast('🔄 Reinicio automático de 24h ejecutado (modo local)', 'info');
+    }
+}
+
+function normalizarClave(nombre) {
+    return nombre.replace(/[.#$\[\]\/]/g, '_').trim();
+}
+
+// ---------- LÓGICA ANTI-DUPLICADOS: prevalece el valor más alto ----------
+// Si el jugador no existe -> se registra.
+// Si existe y el nuevo valor es MAYOR -> se sobreescribe.
+// Si existe y el nuevo valor es MENOR o IGUAL -> se ignora (no se suma, no se duplica).
+async function procesarJugador(nombreCrudo, cantidad) {
+    const nombre = nombreCrudo.trim();
+    if (!nombre || isNaN(cantidad)) return 'invalido';
+
+    if (FIREBASE_LISTO && db) {
+        const clave = normalizarClave(nombre);
+        const nodo = fbFns.child(refJugadores, clave);
+        const snap = await fbFns.get(nodo);
+        if (!snap.exists()) {
+            await fbFns.set(nodo, { name: nombre, crystals: cantidad });
+            return 'nuevo';
+        }
+        const actual = snap.val();
+        if (cantidad > actual.crystals) {
+            await fbFns.set(nodo, { name: nombre, crystals: cantidad });
+            return 'actualizado';
+        }
+        return 'ignorado';
+    }
+
+    // Modo local
+    const existente = pandillaData.find(p => p.name.toLowerCase() === nombre.toLowerCase());
+    let resultado;
+    if (!existente) {
+        pandillaData.push({ name: nombre, crystals: cantidad });
+        resultado = 'nuevo';
+    } else if (cantidad > existente.crystals) {
+        existente.crystals = cantidad;
+        resultado = 'actualizado';
+    } else {
+        resultado = 'ignorado';
+    }
+    renderTablas();
+    guardarLocal();
+    return resultado;
+}
+
+async function eliminarJugador(nombre) {
+    if (FIREBASE_LISTO && db) {
+        const clave = normalizarClave(nombre);
+        await fbFns.remove(fbFns.child(refJugadores, clave));
+        return;
+    }
+    pandillaData = pandillaData.filter(p => p.name !== nombre);
+    renderTablas();
+    guardarLocal();
+}
+
+async function reiniciarTodo() {
+    if (FIREBASE_LISTO && db) {
+        await fbFns.remove(refJugadores);
+        await fbFns.set(refLastReset, Date.now());
+        return;
+    }
+    pandillaData = [];
+    guardarLocal();
+    localStorage.setItem(CLAVE_LOCAL_RESET, String(Date.now()));
+    renderTablas();
+}
+
+// ---------- SEÑAL EN VIVO ----------
+function marcarSeñal(activa, texto) {
+    const punto = document.getElementById('punto-señal');
+    const label = document.getElementById('texto-señal');
+    punto.classList.toggle('offline', !activa);
+    label.textContent = texto;
+}
+
+// ---------- RELOJ EN VIVO ----------
+function actualizarReloj() {
+    const ahora = new Date();
+    const hh = String(ahora.getHours()).padStart(2, '0');
+    const mm = String(ahora.getMinutes()).padStart(2, '0');
+    const ss = String(ahora.getSeconds()).padStart(2, '0');
+    const dd = String(ahora.getDate()).padStart(2, '0');
+    const mo = String(ahora.getMonth() + 1).padStart(2, '0');
+    const yy = ahora.getFullYear();
+    document.getElementById('reloj').textContent = `${hh}:${mm}:${ss} - ${dd}/${mo}/${yy}`;
+}
+setInterval(actualizarReloj, 1000);
+actualizarReloj();
+
+// ---------- RENDER ----------
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function renderTablas() {
+    const ordenado = [...pandillaData].sort((a, b) => b.crystals - a.crystals);
+
+    const top8Body = document.getElementById('tabla-top8');
+    const otros8Body = document.getElementById('tabla-otros8');
+    top8Body.innerHTML = '';
+    otros8Body.innerHTML = '';
+
+    for (let i = 0; i < 8; i++) {
+        if (!ordenado[i]) break;
+        const esOro = i === 0;
+        top8Body.innerHTML += `
+            <tr class="hover:bg-zinc-800/30 transition-colors ${esOro ? 'fila-oro' : ''}">
+                <td class="py-3 font-bold ${esOro ? 'text-[color:var(--oro)]' : 'text-red-500'}">#${i + 1}</td>
+                <td class="font-bold">${esOro ? '👑 ' : ''}${escapeHTML(ordenado[i].name)}</td>
+                <td class="text-right font-black text-zinc-300">${ordenado[i].crystals.toLocaleString()}</td>
+                <td class="text-right boton-borrar-fila">
+                    <button data-nombre="${escapeHTML(ordenado[i].name)}" class="btn-borrar text-zinc-600 hover:text-red-500 text-xs cursor-pointer" title="Borrar jugador">✖</button>
+                </td>
+            </tr>`;
+    }
+
+    for (let i = 8; i < 16; i++) {
+        if (!ordenado[i]) break;
+        otros8Body.innerHTML += `
+            <tr class="hover:bg-zinc-800/30 transition-colors text-zinc-400">
+                <td class="py-3 font-bold text-zinc-600">#${i + 1}</td>
+                <td>${escapeHTML(ordenado[i].name)}</td>
+                <td class="text-right font-bold text-zinc-500">${ordenado[i].crystals.toLocaleString()}</td>
+                <td class="text-right boton-borrar-fila">
+                    <button data-nombre="${escapeHTML(ordenado[i].name)}" class="btn-borrar text-zinc-700 hover:text-red-500 text-xs cursor-pointer" title="Borrar jugador">✖</button>
+                </td>
+            </tr>`;
+    }
+
+    document.querySelectorAll('.btn-borrar').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const nombre = btn.getAttribute('data-nombre');
+            if (!confirm(`¿Quitar a "${nombre}" del registro?`)) return;
+            eliminarJugador(nombre).then(() => mostrarToast(`Jugador "${nombre}" eliminado`, 'info'));
+        });
+    });
+}
+
+// ---------- TOASTS ----------
+let toastTimer = null;
+function mostrarToast(msg, tipo) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast show ' + (tipo || 'info');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.className = 'toast ' + (tipo || 'info'); }, 3800);
+}
+
+// ---------- EXPORTAR JPG ----------
+document.getElementById('btn-exportar').addEventListener('click', () => {
+    const node = document.getElementById('reporte-visual');
+    document.querySelectorAll('.boton-borrar-fila').forEach(td => td.style.visibility = 'hidden');
+    html2canvas(node, { backgroundColor: '#050506' }).then(canvas => {
+        document.querySelectorAll('.boton-borrar-fila').forEach(td => td.style.visibility = '');
+        const link = document.createElement('a');
+        link.download = 'Reporte_Mafia_Exotic_OneState.jpg';
+        link.href = canvas.toDataURL('image/jpeg');
+        link.click();
+    });
+});
+
+// ---------- REINICIAR TODO ----------
+document.getElementById('btn-reiniciar').addEventListener('click', async () => {
+    if (!confirm('¿Seguro que quieres borrar TODO el registro? El panel quedará vacío para todos los que usan esta web.')) return;
+    await reiniciarTodo();
+    mostrarToast('Registro reiniciado para todos', 'info');
+});
+
+// ---------- ENTRADA MANUAL ----------
+document.getElementById('form-manual').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombreInput = document.getElementById('manual-nombre');
+    const cantidadInput = document.getElementById('manual-cantidad');
+    const nombre = nombreInput.value.trim();
+    const cantidad = parseInt(cantidadInput.value, 10);
+
+    if (!nombre || isNaN(cantidad)) return;
+
+    const resultado = await procesarJugador(nombre, cantidad);
+    const mensajes = {
+        nuevo: `✅ "${nombre}" registrado con ${cantidad.toLocaleString()}`,
+        actualizado: `⬆️ "${nombre}" actualizado a ${cantidad.toLocaleString()}`,
+        ignorado: `⏸️ "${nombre}" ya tiene un valor igual o mayor guardado, se ignoró`,
+        invalido: 'Datos inválidos'
+    };
+    mostrarToast(mensajes[resultado], resultado === 'ignorado' ? 'info' : 'ok');
+    nombreInput.value = '';
+    cantidadInput.value = '';
+});
+
+// ---------- OCR (Tesseract.js) — parser por coordenadas, sin cambios de lógica ----------
+const inputArchivo = document.getElementById('screenshot-input');
+const overlay = document.getElementById('ocr-overlay');
+const progresoTexto = document.getElementById('ocr-progress');
+const selectorColumna = document.getElementById('columna-select');
+
+inputArchivo.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    overlay.classList.add('active');
+    progresoTexto.textContent = 'Iniciando motor OCR...';
+
+    try {
+        const dims = await obtenerDimensiones(file);
+        const resultado = await Tesseract.recognize(file, 'spa+eng', {
+            logger: (info) => {
+                if (info.status && info.progress != null) {
+                    const pct = Math.round(info.progress * 100);
+                    progresoTexto.textContent = `${traducirEstado(info.status)}... ${pct}%`;
+                }
+            }
+        });
+
+        const palabras = resultado.data.words || [];
+        const filas = parsearPorColumnas(palabras, dims.width, dims.height, selectorColumna.value);
+
+        overlay.classList.remove('active');
+        inputArchivo.value = '';
+
+        if (filas.length === 0) {
+            mostrarToast('No se detectaron filas de jugadores en la imagen', 'err');
+            return;
+        }
+
+        ocrPendiente = filas;
+        mostrarRevisionOCR(filas);
+    } catch (err) {
+        console.error(err);
+        overlay.classList.remove('active');
+        mostrarToast('Error al procesar la imagen', 'err');
+    }
+});
+
+function obtenerDimensiones(file) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight }); URL.revokeObjectURL(url); };
+        img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
+        img.src = url;
+    });
+}
+
+function traducirEstado(status) {
+    const mapa = {
+        'loading tesseract core': 'Cargando motor',
+        'initializing tesseract': 'Inicializando',
+        'loading language traineddata': 'Cargando idioma',
+        'initializing api': 'Preparando API',
+        'recognizing text': 'Leyendo texto'
+    };
+    return mapa[status] || status;
+}
+
+// Bandas horizontales (fracción del ancho de imagen) calibradas sobre la
+// pantalla de "Participantes" de la pandilla en OneState RP.
+const BANDA_MENU_LATERAL = 0.15;
+const BANDA_NOMBRE = [0.15, 0.50];
+const BANDAS_COLUMNAS = {
+    almacenamiento: [0.50, 0.615],
+    refinadores:    [0.615, 0.72],
+    transferido:    [0.72, 0.825],
+    entregado:      [0.825, 0.97]
+};
+const PALABRAS_PROHIBIDAS = [
+    'PARTICIPANTE', 'RESULTADO', 'PANDILLA', 'ESTADISTIC', 'ESTADÍSTIC',
+    'HISTORIAL', 'CLASIFICACI', 'TOTAL', 'ACTUALIZ', 'AVANZAR', 'ATRAS',
+    'ATRÁS', 'LABORATORIO', 'DIPLOMACIA', 'TERRITORIO', 'CONTRATO',
+    'TAREA', 'TIENDA', 'MIEMBRO', 'SINDICATO', 'ALMACENAM', 'REFINADOR',
+    'TRANSFERIDO', 'ENTREGADO', 'CAPTURA', 'CARGADO'
+];
+
+function parsearPorColumnas(palabras, ancho, alto, columnaElegida) {
+    const bandaValor = BANDAS_COLUMNAS[columnaElegida] || BANDAS_COLUMNAS.almacenamiento;
+
+    const utiles = palabras
+        .map(w => ({ texto: (w.text || '').trim(), x0: w.bbox.x0, x1: w.bbox.x1, y0: w.bbox.y0, y1: w.bbox.y1 }))
+        .filter(w => w.texto.length > 0)
+        .filter(w => /[A-Za-zÀ-ÿ0-9]/.test(w.texto))
+        .filter(w => w.x0 >= BANDA_MENU_LATERAL * ancho);
+
+    if (utiles.length === 0) return [];
+
+    utiles.sort((a, b) => a.y0 - b.y0);
+    const filas = [];
+    let filaActual = [];
+    let yPromedio = null;
+
+    for (const w of utiles) {
+        const centroY = (w.y0 + w.y1) / 2;
+        const alturaPalabra = w.y1 - w.y0;
+        if (filaActual.length === 0 || Math.abs(centroY - yPromedio) <= alturaPalabra * 0.6) {
+            filaActual.push(w);
+            const centros = filaActual.map(x => (x.y0 + x.y1) / 2);
+            yPromedio = centros.reduce((a, b) => a + b, 0) / centros.length;
+        } else {
+            filas.push(filaActual);
+            filaActual = [w];
+            yPromedio = centroY;
+        }
+    }
+    if (filaActual.length > 0) filas.push(filaActual);
+
+    const encontrados = [];
+    for (const fila of filas) {
+        fila.sort((a, b) => a.x0 - b.x0);
+
+        const tokensNombre = fila.filter(w => {
+            const cx = (w.x0 + w.x1) / 2 / ancho;
+            return cx >= BANDA_NOMBRE[0] && cx <= BANDA_NOMBRE[1] && /[A-Za-zÀ-ÿ]/.test(w.texto);
+        });
+
+        let nombre = tokensNombre.map(w => w.texto).join(' ').trim();
+        nombre = nombre.replace(/[|_\-•:.]+$/g, '').replace(/^[|_\-•:.]+/g, '').trim();
+
+        if (nombre.length < 2) continue;
+        if (PALABRAS_PROHIBIDAS.some(kw => nombre.toUpperCase().includes(kw))) continue;
+
+        const tokenValor = fila.find(w => {
+            const cx = (w.x0 + w.x1) / 2 / ancho;
+            return cx >= bandaValor[0] && cx <= bandaValor[1] && /\d/.test(w.texto);
+        });
+        if (!tokenValor) continue;
+
+        const soloDigitos = tokenValor.texto.replace(/[^\d]/g, '');
+        if (!soloDigitos) continue;
+        const cantidad = parseInt(soloDigitos, 10);
+        if (isNaN(cantidad)) continue;
+
+        encontrados.push({ name: nombre, crystals: cantidad });
+    }
+
+    // Deduplica: la fila destacada del dueño de la cuenta (o de un MVP) al
+    // final de la captura repite la misma info de su fila normal en la tabla.
+    const vistos = new Set();
+    const sinDuplicados = [];
+    for (const item of encontrados) {
+        const clave = item.name.toLowerCase();
+        if (vistos.has(clave)) continue;
+        vistos.add(clave);
+        sinDuplicados.push(item);
+    }
+    return sinDuplicados;
+}
+
+// ---------- REVISIÓN MANUAL ANTES DE CONFIRMAR ----------
+function mostrarRevisionOCR(filas) {
+    const cont = document.getElementById('ocr-review');
+    const lista = document.getElementById('ocr-review-list');
+    lista.innerHTML = '';
+
+    filas.forEach((fila, idx) => {
+        lista.innerHTML += `
+            <div class="flex items-center gap-2 bg-zinc-950/60 border border-zinc-800 rounded p-2">
+                <input type="text" value="${escapeHTML(fila.name)}" data-idx="${idx}" data-field="name"
+                    class="ocr-input-name bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm flex-1 text-zinc-200" />
+                <input type="number" value="${fila.crystals}" data-idx="${idx}" data-field="crystals"
+                    class="ocr-input-crystals bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm w-28 text-right text-zinc-200" />
+                <button data-idx="${idx}" class="btn-quitar-ocr text-red-500 hover:text-red-400 text-sm px-2 cursor-pointer">✖</button>
+            </div>`;
+    });
+
+    document.querySelectorAll('.btn-quitar-ocr').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = parseInt(btn.getAttribute('data-idx'), 10);
+            ocrPendiente.splice(idx, 1);
+            mostrarRevisionOCR(ocrPendiente);
+        });
+    });
+
+    cont.classList.remove('hidden');
+    cont.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+document.getElementById('btn-confirmar-ocr').addEventListener('click', async () => {
+    const nombres = document.querySelectorAll('.ocr-input-name');
+    const cantidades = document.querySelectorAll('.ocr-input-crystals');
+
+    const filasFinales = [];
+    nombres.forEach((inputNombre, i) => {
+        const nombre = inputNombre.value.trim();
+        const cantidad = parseInt(cantidades[i].value, 10);
+        if (nombre.length >= 2 && !isNaN(cantidad)) filasFinales.push({ name: nombre, crystals: cantidad });
+    });
+
+    let nuevos = 0, actualizados = 0, ignorados = 0;
+    for (const fila of filasFinales) {
+        const resultado = await procesarJugador(fila.name, fila.crystals);
+        if (resultado === 'nuevo') nuevos++;
+        else if (resultado === 'actualizado') actualizados++;
+        else if (resultado === 'ignorado') ignorados++;
+    }
+
+    cancelarOCR();
+    mostrarToast(`✅ ${nuevos} nuevo(s), ⬆️ ${actualizados} actualizado(s), ⏸️ ${ignorados} sin cambio`, 'ok');
+});
+
+document.getElementById('btn-cancelar-ocr').addEventListener('click', cancelarOCR);
+
+function cancelarOCR() {
+    ocrPendiente = [];
+    document.getElementById('ocr-review').classList.add('hidden');
+    document.getElementById('ocr-review-list').innerHTML = '';
+}
+
+// ---------- INICIALIZAR ----------
+if (FIREBASE_LISTO) {
+    inicializarFirebase();
+} else {
+    marcarSeñal(false, 'Firebase sin configurar · modo local');
+    mostrarToast('Pega tus credenciales de Firebase en el código para activar el modo en vivo', 'info');
+    activarModoLocal();
+}
+</script>
+</body>
+</html>

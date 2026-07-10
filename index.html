@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <!-- OCR -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<!-- Exportar a JPG (fork "pro" necesario: soporta los colores oklch() que genera Tailwind v4) -->
+<!-- Exportar a JPG (fork "pro": soporta los colores oklch() que genera Tailwind v4) -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/dist/html2canvas-pro.min.js"></script>
 
 <style>
@@ -35,7 +35,6 @@
     .gang-title{ font-family: 'Permanent Marker', cursive; }
     .mono{ font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; }
 
-    /* Textura de grano sutil sobre toda la página */
     .grano::before{
         content:"";
         position: fixed; inset:0; z-index: 0; pointer-events:none;
@@ -65,8 +64,28 @@
     }
 
     .fila-oro{ border-left: 3px solid var(--oro) !important; background: linear-gradient(90deg, rgba(201,160,74,0.08), transparent); }
-    .fila-entregada{ opacity: 0.45; }
-    .fila-entregada .nombre-jugador{ text-decoration: line-through; }
+    .fila-compacta td{ padding-top:2px; padding-bottom:2px; }
+
+    .tab-btn{
+        font-family: 'Rajdhani', sans-serif; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.08em; font-size:11px; padding:10px 14px;
+        color:#71717a; border-bottom:2px solid transparent; white-space:nowrap;
+        cursor:pointer; transition: all .15s ease;
+    }
+    .tab-btn:hover{ color:#d4d4d8; }
+    .tab-btn.tab-activo{ color:#ef4444; border-bottom-color:#b91c1c; }
+    .vista.hidden{ display:none; }
+
+    .badge-caja-abierta{ background:#14532d; color:#86efac; }
+    .badge-caja-cerrada{ background:#450a0a; color:#fca5a5; }
+
+    .stepper-btn{
+        width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+        border-radius:4px; background:#27272a; color:#d4d4d8; font-weight:700; cursor:pointer;
+        font-size:13px; line-height:1; user-select:none;
+    }
+    .stepper-btn:hover{ background:#3f3f46; }
+    .stepper-btn:disabled{ opacity:0.3; cursor:not-allowed; }
 
     .ocr-overlay{
         position: fixed; inset: 0; background: rgba(2,2,3,0.92);
@@ -130,7 +149,7 @@
 <div class="max-w-6xl mx-auto relative z-10">
 
     <!-- ENCABEZADO -->
-    <header class="border-b border-red-900/60 pb-5 mb-6 sm:mb-8">
+    <header class="border-b border-red-900/60 pb-5 mb-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div class="w-full md:w-auto">
                 <p class="text-[10px] md:text-[11px] tracking-[0.25em] md:tracking-[0.3em] text-red-700 uppercase mb-1">— Expediente de Operaciones —</p>
@@ -149,107 +168,183 @@
         </div>
     </header>
 
-    <!-- ZONA DE CARGA + ENTRADA MANUAL -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+    <!-- PESTAÑAS -->
+    <nav class="flex gap-1 mb-6 overflow-x-auto border-b border-zinc-800">
+        <button class="tab-btn tab-activo" data-tab="hoy">01 · Día Actual</button>
+        <button class="tab-btn" data-tab="ayer">02 · Día Anterior</button>
+        <button class="tab-btn" data-tab="historico">03 · Histórico General</button>
+        <button class="tab-btn" data-tab="despachos">04 · Despachos</button>
+    </nav>
 
-        <!-- CARGA DE CAPTURAS (OCR) -->
-        <div class="bg-zinc-950/60 border border-dashed border-red-900/50 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <div class="flex-1">
-                <p class="text-xs text-zinc-500 uppercase tracking-wider">¿Nueva entrega?</p>
-                <p class="text-sm font-bold text-red-400 mb-2">Sube una o varias capturas</p>
-                <select id="columna-select" class="w-full sm:w-auto bg-zinc-900 border border-zinc-700 rounded text-[11px] text-zinc-400 px-2 py-1.5">
-                    <option value="almacenamiento" selected>Columna: En almacenamiento</option>
-                    <option value="refinadores">Columna: Cargado en refinadores</option>
-                    <option value="transferido">Columna: Transferido para clasif.</option>
-                    <option value="entregado">Columna: Entregado</option>
-                </select>
+    <!-- ==================== VISTA 1: DÍA ACTUAL ==================== -->
+    <div id="vista-hoy" class="vista">
+
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <p class="text-xs text-zinc-500 uppercase tracking-wide">Fecha: <span id="fecha-hoy" class="text-zinc-300 mono">--</span></p>
+            <div class="flex items-center gap-2">
+                <span id="badge-caja-hoy" class="text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wide badge-caja-abierta">🟢 Caja Abierta</span>
+                <span id="contador-hoy" class="text-[10px] text-zinc-500 mono">0/50</span>
             </div>
-            <input type="file" id="screenshot-input" accept="image/*" multiple class="w-full sm:w-auto text-xs text-zinc-500 file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wide file:bg-red-700 file:text-white hover:file:bg-red-600 file:cursor-pointer"/>
         </div>
 
-        <!-- ENTRADA MANUAL -->
-        <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-4">
-            <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Registro manual</p>
-            <form id="form-manual" class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="manual-nombre" placeholder="Nombre / ID del jugador" required
-                    class="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600" />
-                <input type="number" id="manual-cantidad" placeholder="Esencia" required
-                    class="w-full sm:w-28 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600" />
-                <button type="submit" class="bg-red-700 hover:bg-red-600 text-white font-bold text-xs uppercase tracking-wide px-4 py-2 rounded cursor-pointer whitespace-nowrap">Registrar</button>
-            </form>
+        <!-- ZONA DE CARGA + ENTRADA MANUAL -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <div class="bg-zinc-950/60 border border-dashed border-red-900/50 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div class="flex-1">
+                    <p class="text-xs text-zinc-500 uppercase tracking-wider">¿Nueva entrega?</p>
+                    <p class="text-sm font-bold text-red-400 mb-2">Sube una o varias capturas</p>
+                    <select id="columna-select" class="w-full sm:w-auto bg-zinc-900 border border-zinc-700 rounded text-[11px] text-zinc-400 px-2 py-1.5">
+                        <option value="almacenamiento" selected>Columna: En almacenamiento</option>
+                        <option value="refinadores">Columna: Cargado en refinadores</option>
+                        <option value="transferido">Columna: Transferido para clasif.</option>
+                        <option value="entregado">Columna: Entregado</option>
+                    </select>
+                </div>
+                <input type="file" id="screenshot-input" accept="image/*" multiple class="w-full sm:w-auto text-xs text-zinc-500 file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wide file:bg-red-700 file:text-white hover:file:bg-red-600 file:cursor-pointer"/>
+            </div>
+
+            <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg p-4">
+                <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Registro manual</p>
+                <form id="form-manual" class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="manual-nombre" placeholder="Nombre / ID del jugador" required
+                        class="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600" />
+                    <input type="number" id="manual-cantidad" placeholder="Esencia" required
+                        class="w-full sm:w-28 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600" />
+                    <button type="submit" class="bg-red-700 hover:bg-red-600 text-white font-bold text-xs uppercase tracking-wide px-4 py-2 rounded cursor-pointer whitespace-nowrap">Registrar</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="mb-6 flex flex-col sm:flex-row justify-end gap-3">
+            <button id="btn-reiniciar" class="bg-zinc-950 border border-zinc-800 hover:border-red-800 hover:text-red-500 text-zinc-500 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
+                🗑️ Reiniciar Día Actual
+            </button>
+            <button data-exportar="reporte-hoy" data-nombre="Reporte_Mafia_Exotic_Hoy" class="btn-exportar bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
+                📷 Descargar Reporte JPG
+            </button>
+        </div>
+
+        <div id="reporte-hoy" class="relative grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-3 sm:p-5 bg-[#050506] border border-zinc-800 rounded-xl">
+            <div class="cinta" style="top:-9px; left:24px; transform: rotate(-4deg);"></div>
+            <div class="cinta" style="top:-9px; right:24px; transform: rotate(4deg);"></div>
+
+            <div class="bg-zinc-950/70 border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
+                <div class="flex justify-between items-center mb-3 bg-gradient-to-r from-red-950/50 to-transparent p-2 rounded gap-2">
+                    <h2 class="text-sm sm:text-lg font-black tracking-wider text-red-500 uppercase">🔥 Top 8 Contribuyentes</h2>
+                    <span class="text-[9px] sm:text-[10px] bg-red-700 text-white font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Activos</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
+                                <th class="py-2 pr-1">#</th><th>Jugador</th><th class="text-right">Esencia</th><th class="text-right">Viajes</th><th class="w-6"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="hoy-top8" class="divide-y divide-zinc-800/50"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-zinc-950/70 border-t-4 border-zinc-700 p-3 sm:p-4 rounded-lg shadow-xl">
+                <div class="flex justify-between items-center mb-3 bg-gradient-to-r from-zinc-900/60 to-transparent p-2 rounded gap-2">
+                    <h2 class="text-sm sm:text-lg font-black tracking-wider text-zinc-400 uppercase">💀 Otros Miembros</h2>
+                    <span class="text-[9px] sm:text-[10px] bg-zinc-700 text-zinc-200 font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Bajo Aporte</span>
+                </div>
+                <div class="overflow-x-auto max-h-[420px]">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-zinc-800 text-zinc-500 text-[9px] sm:text-[10px] tracking-widest uppercase">
+                                <th class="py-1 pr-1">#</th><th>Jugador</th><th class="text-right">Esen.</th><th class="text-right">Viajes</th><th class="w-4"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="hoy-otros" class="divide-y divide-zinc-800/40 text-[10px] sm:text-[11px]"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- ACCIONES -->
-    <div class="mb-6 flex flex-col sm:flex-row justify-end gap-3">
-        <button id="btn-reiniciar" class="bg-zinc-950 border border-zinc-800 hover:border-red-800 hover:text-red-500 text-zinc-500 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
-            🗑️ Reiniciar Registro
-        </button>
-        <button id="btn-exportar" class="bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
-            📷 Descargar Reporte JPG
-        </button>
+    <!-- ==================== VISTA 2: DÍA ANTERIOR ==================== -->
+    <div id="vista-ayer" class="vista hidden">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <p class="text-xs text-zinc-500 uppercase tracking-wide">Fecha: <span id="fecha-ayer" class="text-zinc-300 mono">--</span></p>
+            <span class="text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wide badge-caja-cerrada">🔒 Caja Cerrada</span>
+        </div>
+        <p class="text-[11px] text-zinc-600 mb-4">Las esencias de este día ya no se pueden modificar (ni por OCR ni manual). Solo puedes marcar los <b class="text-zinc-400">viajes entregados</b>.</p>
+
+        <div class="relative grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-3 sm:p-5 bg-[#050506] border border-zinc-800 rounded-xl">
+            <div class="bg-zinc-950/70 border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
+                <div class="flex justify-between items-center mb-3 bg-gradient-to-r from-red-950/50 to-transparent p-2 rounded gap-2">
+                    <h2 class="text-sm sm:text-lg font-black tracking-wider text-red-500 uppercase">🔥 Top 8 Contribuyentes</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
+                                <th class="py-2 pr-1">#</th><th>Jugador</th><th class="text-right">Esencia</th><th class="text-right">Viajes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ayer-top8" class="divide-y divide-zinc-800/50"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="bg-zinc-950/70 border-t-4 border-zinc-700 p-3 sm:p-4 rounded-lg shadow-xl">
+                <div class="flex justify-between items-center mb-3 bg-gradient-to-r from-zinc-900/60 to-transparent p-2 rounded gap-2">
+                    <h2 class="text-sm sm:text-lg font-black tracking-wider text-zinc-400 uppercase">💀 Otros Miembros</h2>
+                </div>
+                <div class="overflow-x-auto max-h-[420px]">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-zinc-800 text-zinc-500 text-[9px] sm:text-[10px] tracking-widest uppercase">
+                                <th class="py-1 pr-1">#</th><th>Jugador</th><th class="text-right">Esen.</th><th class="text-right">Viajes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ayer-otros" class="divide-y divide-zinc-800/40 text-[10px] sm:text-[11px]"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- REPORTE VISUAL -->
-    <div id="reporte-visual" class="relative grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-3 sm:p-5 bg-[#050506] border border-zinc-800 rounded-xl">
-        <div class="cinta" style="top:-9px; left:24px; transform: rotate(-4deg);"></div>
-        <div class="cinta" style="top:-9px; right:24px; transform: rotate(4deg);"></div>
-
-        <!-- TOP 8 -->
-        <div class="bg-zinc-950/70 border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
-            <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-red-950/50 to-transparent p-2 rounded gap-2">
-                <h2 class="text-sm sm:text-lg font-black tracking-wider text-red-500 uppercase">🔥 Top 8 Contribuyentes</h2>
-                <span class="text-[9px] sm:text-[10px] bg-red-700 text-white font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Activos</span>
-            </div>
-            <p class="text-[10px] text-zinc-600 mb-2 px-1">Marca la casilla cuando ya se le repartió su parte.</p>
-            <div class="overflow-x-auto">
+    <!-- ==================== VISTA 3: HISTÓRICO GENERAL ==================== -->
+    <div id="vista-historico" class="vista hidden">
+        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-4">Suma total histórica por jugador (solo lectura) · Top 50</p>
+        <div class="bg-zinc-950/70 border-t-4 border-[color:var(--oro)] p-3 sm:p-4 rounded-lg shadow-xl">
+            <div class="overflow-x-auto max-h-[560px]">
                 <table class="w-full text-left border-collapse text-xs sm:text-sm">
                     <thead>
                         <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
-                            <th class="py-2 pr-1">#</th>
-                            <th>Jugador</th>
-                            <th class="text-right">Esencia</th>
-                            <th class="w-6"></th>
+                            <th class="py-2 pr-1">#</th><th>Jugador</th><th class="text-right">Esencia Total</th><th class="text-right">Rocas Totales</th>
                         </tr>
                     </thead>
-                    <tbody id="tabla-top8" class="divide-y divide-zinc-800/50"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- OTROS MIEMBROS -->
-        <div class="bg-zinc-950/70 border-t-4 border-zinc-700 p-3 sm:p-4 rounded-lg shadow-xl">
-            <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-zinc-900/60 to-transparent p-2 rounded gap-2">
-                <h2 class="text-sm sm:text-lg font-black tracking-wider text-zinc-400 uppercase">💀 Otros Miembros</h2>
-                <span class="text-[9px] sm:text-[10px] bg-zinc-700 text-zinc-200 font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Bajo Aporte</span>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-xs sm:text-sm">
-                    <thead>
-                        <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
-                            <th class="py-2 pr-1">#</th>
-                            <th>Jugador</th>
-                            <th class="text-right">Esencia</th>
-                            <th class="w-6"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-otros8" class="divide-y divide-zinc-800/50"></tbody>
+                    <tbody id="historico-tabla" class="divide-y divide-zinc-800/50"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- REVISIÓN OCR -->
-    <div id="ocr-review" class="hidden mt-8 bg-zinc-950/70 border-t-4 border-yellow-500 p-3 sm:p-4 rounded-lg shadow-xl">
-        <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-yellow-950/30 to-transparent p-2 rounded gap-2">
-            <h2 class="text-sm sm:text-base font-black tracking-wider text-yellow-400 uppercase">⚠️ Revisa lo que detectó el escaneo</h2>
-            <span class="text-[9px] sm:text-[10px] bg-yellow-500 text-black font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Confirmar</span>
+    <!-- ==================== VISTA 4: DESPACHOS / LOGÍSTICA ==================== -->
+    <div id="vista-despachos" class="vista hidden">
+        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-1">Solo jugadores que cumplieron la meta mínima (≥ 200 esencias = 20 rocas)</p>
+        <p class="text-[11px] text-zinc-600 mb-4">Cada 50 esencias adicionales genera 1 viaje disponible. 🟩 = viaje entregado · ⬜ = viaje pendiente.</p>
+
+        <div class="mb-6 flex justify-end">
+            <button data-exportar="reporte-despachos" data-nombre="Reporte_Despachos_Mafia_Exotic" class="btn-exportar bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
+                📷 Descargar Reporte JPG
+            </button>
         </div>
-        <p class="text-[11px] sm:text-xs text-zinc-500 mb-3">El escaneo puede confundir letras o números. Corrige o borra lo necesario antes de aplicar.</p>
-        <div id="ocr-review-list" class="space-y-2 mb-4"></div>
-        <div class="flex flex-col sm:flex-row gap-3">
-            <button id="btn-confirmar-ocr" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-6 rounded text-xs uppercase tracking-wide cursor-pointer">✅ Aplicar al registro</button>
-            <button id="btn-cancelar-ocr" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2 px-6 rounded text-xs uppercase tracking-wide cursor-pointer">✖ Cancelar</button>
+
+        <div id="reporte-despachos" class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-3 sm:p-5 bg-[#050506] border border-zinc-800 rounded-xl">
+            <div class="bg-zinc-950/70 border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
+                <h2 class="text-sm sm:text-base font-black tracking-wider text-red-500 uppercase mb-3">📦 Día Actual — Califican</h2>
+                <div id="despachos-hoy" class="space-y-2"></div>
+                <p id="despachos-hoy-vacio" class="text-xs text-zinc-600 hidden">Nadie ha llegado a la meta mínima hoy todavía.</p>
+            </div>
+            <div class="bg-zinc-950/70 border-t-4 border-zinc-700 p-3 sm:p-4 rounded-lg shadow-xl">
+                <h2 class="text-sm sm:text-base font-black tracking-wider text-zinc-400 uppercase mb-3">📦 Día Anterior — Califican</h2>
+                <div id="despachos-ayer" class="space-y-2"></div>
+                <p id="despachos-ayer-vacio" class="text-xs text-zinc-600 hidden">Nadie llegó a la meta mínima el día anterior.</p>
+            </div>
         </div>
     </div>
 
@@ -267,7 +362,7 @@
 // para pruebas, o protégelas con Firebase Auth si varias personas van a escribir.
 // ============================================================
 const firebaseConfig = {
-apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
+  apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
   authDomain: "mafia-exotic-app.firebaseapp.com",
   databaseURL: "https://mafia-exotic-app-default-rtdb.firebaseio.com",
   projectId: "mafia-exotic-app",
@@ -279,28 +374,58 @@ apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
 // ============================================================
 
 const FIREBASE_LISTO = firebaseConfig.apiKey !== "TU_API_KEY_AQUI";
-const VEINTICUATRO_HORAS_MS = 86400000;
-const CLAVE_LOCAL_DATOS = 'onestate_guarida_data_v2';
-const CLAVE_LOCAL_RESET = 'onestate_guarida_last_reset_v2';
 const CLAVE_ACCESO = 'exoticmafiatop1';
 const CLAVE_LOCAL_UNLOCK = 'onestate_unlocked_v1';
 
-let db = null, refJugadores = null, refLastReset = null;
-let fbFns = null; // funciones modulares de firebase-database, cargadas dinámicamente
+// ---------- REGLAS DE NEGOCIO (Logística) ----------
+const MAX_JUGADORES = 50;
+const ESENCIAS_POR_ROCA = 10;
+const META_MINIMA = 200;          // = 20 rocas
+const ESENCIAS_POR_VIAJE = 50;
+const rocasDe = (esencias) => Math.floor(esencias / ESENCIAS_POR_ROCA);
+const viajesDisponiblesDe = (esencias) => Math.floor(esencias / ESENCIAS_POR_VIAJE);
+const cumpleMeta = (esencias) => esencias >= META_MINIMA;
 
-let pandillaData = []; // { name, crystals, entregado } — siempre la fuente que se renderiza
+let db = null, fbFns = null;
+let refJugadoresHoy = null, refJugadoresAyer = null, refHistorico = null;
+let unsubHoy = null, unsubAyer = null, unsubHistorico = null;
+
+let datosHoy = [], datosAyer = [], datosHistorico = [];
 let ocrPendiente = [];
+let vistaActual = 'hoy';
+
+// ---------- FECHAS ----------
+function formatoFecha(d) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+function fechaHoyStr() { return formatoFecha(new Date()); }
+function diaSiguienteStr(fechaStr) {
+    const d = new Date(fechaStr + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
+    return formatoFecha(d);
+}
+
+function normalizarClave(nombre) {
+    return nombre.replace(/[.#$\[\]\/\s]+/g, '_').trim();
+}
 
 // ---------- ACCESO CON CONTRASEÑA ----------
 function iniciarApp() {
     document.getElementById('login-gate').classList.add('hidden');
     document.getElementById('app-content').classList.remove('hidden');
+    document.getElementById('fecha-hoy').textContent = fechaHoyStr();
+
     if (FIREBASE_LISTO) {
         inicializarFirebase();
     } else {
         marcarSeñal(false, 'Modo local (sin conexión)');
         activarModoLocal();
     }
+
+    setInterval(revisarCambioDeDia, 60000);
 }
 
 function intentarLogin() {
@@ -314,17 +439,13 @@ function intentarLogin() {
         campo.focus();
     }
 }
-
 document.getElementById('login-btn').addEventListener('click', intentarLogin);
-document.getElementById('login-password').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') intentarLogin();
-});
+document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') intentarLogin(); });
+if (localStorage.getItem(CLAVE_LOCAL_UNLOCK) === '1') iniciarApp();
 
-if (localStorage.getItem(CLAVE_LOCAL_UNLOCK) === '1') {
-    iniciarApp();
-}
-
-// ---------- INICIALIZAR FIREBASE (si hay credenciales) ----------
+// ============================================================
+// FIREBASE: inicialización, rotación de día y suscripciones
+// ============================================================
 async function inicializarFirebase() {
     try {
         const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
@@ -332,20 +453,9 @@ async function inicializarFirebase() {
         fbFns = fb;
         const app = initializeApp(firebaseConfig);
         db = fb.getDatabase(app);
-        refJugadores = fb.ref(db, 'jugadores');
-        refLastReset = fb.ref(db, 'lastReset');
 
-        await verificarReinicio24h();
-
-        fb.onValue(refJugadores, (snapshot) => {
-            const val = snapshot.val() || {};
-            pandillaData = Object.values(val).map(j => ({ name: j.name, crystals: j.crystals, entregado: !!j.entregado }));
-            renderTablas();
-        }, (err) => {
-            console.error('Error de datos en vivo:', err);
-            marcarSeñal(false, 'Error de conexión');
-        });
-
+        await rotarDiaSiCorrespondeFirebase();
+        suscribirFirebase();
         marcarSeñal(true, 'Conectado · En vivo');
     } catch (err) {
         console.error('No se pudo inicializar la conexión:', err);
@@ -355,153 +465,237 @@ async function inicializarFirebase() {
     }
 }
 
-async function verificarReinicio24h() {
-    const snap = await fbFns.get(refLastReset);
-    const ahora = Date.now();
+// Cierra días viejos en cadena hasta llegar al día real de hoy, sumando
+// cada uno al histórico general antes de marcarlo "cerrada".
+async function rotarDiaSiCorrespondeFirebase() {
+    const hoy = fechaHoyStr();
+    const refControl = fb_ref('control/diaActivo');
+    const snap = await fbFns.get(refControl);
+
     if (!snap.exists()) {
-        await fbFns.set(refLastReset, ahora);
+        await fbFns.set(refControl, hoy);
+        await fbFns.set(fb_ref(`registros_diarios/${hoy}/estado_caja`), 'abierta');
         return;
     }
-    const ultimo = snap.val();
-    if (ahora - ultimo >= VEINTICUATRO_HORAS_MS) {
-        await fbFns.remove(refJugadores);
-        await fbFns.set(refLastReset, ahora);
-        mostrarToast('🔄 Reinicio automático de 24h ejecutado', 'info');
+
+    let diaGuardado = snap.val();
+    if (diaGuardado === hoy) return;
+
+    while (diaGuardado !== hoy) {
+        const snapViejo = await fbFns.get(fb_ref(`registros_diarios/${diaGuardado}/jugadores`));
+        const jugadoresViejo = snapViejo.exists() ? Object.values(snapViejo.val()) : [];
+
+        for (const j of jugadoresViejo) {
+            const claveHist = normalizarClave(j.name);
+            const nodoHist = fb_ref(`historico_general/${claveHist}`);
+            const snapHist = await fbFns.get(nodoHist);
+            const previo = snapHist.exists() ? (snapHist.val().crystals || 0) : 0;
+            await fbFns.set(nodoHist, { name: j.name, crystals: previo + (j.crystals || 0) });
+        }
+
+        await fbFns.set(fb_ref(`registros_diarios/${diaGuardado}/estado_caja`), 'cerrada');
+        diaGuardado = diaSiguienteStr(diaGuardado);
+    }
+
+    await fbFns.set(refControl, hoy);
+    await fbFns.set(fb_ref(`registros_diarios/${hoy}/estado_caja`), 'abierta');
+    mostrarToast('🔄 Nuevo día iniciado: la caja anterior quedó cerrada', 'info');
+}
+
+function fb_ref(path) { return fbFns.ref(db, path); }
+
+function suscribirFirebase() {
+    if (unsubHoy) unsubHoy();
+    if (unsubAyer) unsubAyer();
+    if (unsubHistorico) unsubHistorico();
+
+    const hoy = fechaHoyStr();
+    const ayer = diaAnteriorAFechaStr(hoy);
+
+    refJugadoresHoy = fb_ref(`registros_diarios/${hoy}/jugadores`);
+    refJugadoresAyer = fb_ref(`registros_diarios/${ayer}/jugadores`);
+    refHistorico = fb_ref('historico_general');
+
+    document.getElementById('fecha-hoy').textContent = hoy;
+    document.getElementById('fecha-ayer').textContent = ayer;
+
+    unsubHoy = fbFns.onValue(refJugadoresHoy, (snap) => { datosHoy = coleccionDesdeSnapshot(snap.val()); renderTodo(); });
+    unsubAyer = fbFns.onValue(refJugadoresAyer, (snap) => { datosAyer = coleccionDesdeSnapshot(snap.val()); renderTodo(); });
+    unsubHistorico = fbFns.onValue(refHistorico, (snap) => { datosHistorico = coleccionDesdeSnapshot(snap.val()); renderTodo(); });
+}
+
+function diaAnteriorAFechaStr(fechaStr) {
+    const d = new Date(fechaStr + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    return formatoFecha(d);
+}
+
+function coleccionDesdeSnapshot(val) {
+    if (!val) return [];
+    return Object.entries(val).map(([clave, j]) => ({
+        clave, name: j.name, crystals: j.crystals || 0, viajesEntregados: j.viajesEntregados || 0
+    }));
+}
+
+async function revisarCambioDeDia() {
+    if (FIREBASE_LISTO && db) {
+        const hoyGuardado = document.getElementById('fecha-hoy').textContent;
+        if (hoyGuardado !== fechaHoyStr()) {
+            await rotarDiaSiCorrespondeFirebase();
+            suscribirFirebase();
+        }
+    } else {
+        const hoyGuardado = localStorage.getItem('control_dia_activo');
+        if (hoyGuardado && hoyGuardado !== fechaHoyStr()) {
+            rotarDiaSiCorrespondeLocal();
+            renderTodo();
+        }
     }
 }
 
-// ---------- MODO LOCAL (respaldo mientras no hay conexión al servidor) ----------
+// ============================================================
+// MODO LOCAL (respaldo mientras no hay conexión al servidor)
+// ============================================================
 function activarModoLocal() {
+    rotarDiaSiCorrespondeLocal();
     cargarLocal();
-    verificarReinicioLocal24h();
-    renderTablas();
+    renderTodo();
+}
+
+function claveDiaLocal(fecha) { return `registros_diarios_${fecha}`; }
+
+function rotarDiaSiCorrespondeLocal() {
+    const hoy = fechaHoyStr();
+    let diaGuardado = localStorage.getItem('control_dia_activo');
+
+    if (!diaGuardado) {
+        localStorage.setItem('control_dia_activo', hoy);
+        return;
+    }
+    if (diaGuardado === hoy) return;
+
+    let historico = {};
+    try { historico = JSON.parse(localStorage.getItem('historico_general') || '{}'); } catch (e) { historico = {}; }
+
+    while (diaGuardado !== hoy) {
+        let jugadoresViejo = [];
+        try { jugadoresViejo = JSON.parse(localStorage.getItem(claveDiaLocal(diaGuardado)) || '[]'); } catch (e) { jugadoresViejo = []; }
+
+        for (const j of jugadoresViejo) {
+            const clave = normalizarClave(j.name);
+            const previo = historico[clave] ? historico[clave].crystals : 0;
+            historico[clave] = { name: j.name, crystals: previo + (j.crystals || 0) };
+        }
+        diaGuardado = diaSiguienteStr(diaGuardado);
+    }
+
+    localStorage.setItem('historico_general', JSON.stringify(historico));
+    localStorage.setItem('control_dia_activo', hoy);
+    mostrarToast('🔄 Nuevo día iniciado (modo local): la caja anterior quedó cerrada', 'info');
 }
 
 function cargarLocal() {
+    const hoy = fechaHoyStr();
+    const ayer = diaAnteriorAFechaStr(hoy);
+    document.getElementById('fecha-hoy').textContent = hoy;
+    document.getElementById('fecha-ayer').textContent = ayer;
+
+    try { datosHoy = JSON.parse(localStorage.getItem(claveDiaLocal(hoy)) || '[]'); } catch (e) { datosHoy = []; }
+    try { datosAyer = JSON.parse(localStorage.getItem(claveDiaLocal(ayer)) || '[]'); } catch (e) { datosAyer = []; }
     try {
-        const raw = localStorage.getItem(CLAVE_LOCAL_DATOS);
-        pandillaData = raw ? JSON.parse(raw) : [];
-    } catch (e) {
-        pandillaData = [];
-    }
+        const hist = JSON.parse(localStorage.getItem('historico_general') || '{}');
+        datosHistorico = Object.entries(hist).map(([clave, j]) => ({ clave, name: j.name, crystals: j.crystals || 0 }));
+    } catch (e) { datosHistorico = []; }
 }
 
-function guardarLocal() {
-    try { localStorage.setItem(CLAVE_LOCAL_DATOS, JSON.stringify(pandillaData)); }
-    catch (e) { mostrarToast('No se pudo guardar localmente', 'err'); }
-}
+function guardarLocalHoy() { localStorage.setItem(claveDiaLocal(fechaHoyStr()), JSON.stringify(datosHoy)); }
+function guardarLocalAyer() { localStorage.setItem(claveDiaLocal(diaAnteriorAFechaStr(fechaHoyStr())), JSON.stringify(datosAyer)); }
 
-function verificarReinicioLocal24h() {
-    const ahora = Date.now();
-    const ultimo = parseInt(localStorage.getItem(CLAVE_LOCAL_RESET) || '0', 10);
-    if (!ultimo) {
-        localStorage.setItem(CLAVE_LOCAL_RESET, String(ahora));
-        return;
-    }
-    if (ahora - ultimo >= VEINTICUATRO_HORAS_MS) {
-        pandillaData = [];
-        guardarLocal();
-        localStorage.setItem(CLAVE_LOCAL_RESET, String(ahora));
-        mostrarToast('🔄 Reinicio automático de 24h ejecutado (modo local)', 'info');
-    }
-}
+function modoFirebaseActivo() { return FIREBASE_LISTO && !!db; }
 
-function normalizarClave(nombre) {
-    return nombre.replace(/[.#$\[\]\/]/g, '_').trim();
-}
-
-// ---------- LÓGICA ANTI-DUPLICADOS: prevalece el valor más alto ----------
-// Si el jugador no existe -> se registra.
-// Si existe y el nuevo valor es MAYOR -> se sobreescribe.
-// Si existe y el nuevo valor es MENOR o IGUAL -> se ignora (no se suma, no se duplica).
-async function procesarJugador(nombreCrudo, cantidad) {
-    const nombre = nombreCrudo.trim();
+// ============================================================
+// LÓGICA ANTI-DUPLICADOS: prevalece el valor más alto (solo Día Actual)
+// ============================================================
+async function procesarJugadorHoy(nombreCrudo, cantidad) {
+    const nombre = (nombreCrudo || '').trim();
     if (!nombre || isNaN(cantidad)) return 'invalido';
+    const clave = normalizarClave(nombre);
 
-    if (FIREBASE_LISTO && db) {
-        const clave = normalizarClave(nombre);
-        const nodo = fbFns.child(refJugadores, clave);
+    if (modoFirebaseActivo()) {
+        const nodo = fbFns.child(refJugadoresHoy, clave);
         const snap = await fbFns.get(nodo);
         if (!snap.exists()) {
-            await fbFns.set(nodo, { name: nombre, crystals: cantidad, entregado: false });
+            if (datosHoy.length >= MAX_JUGADORES) return 'limite';
+            await fbFns.set(nodo, { name: nombre, crystals: cantidad, viajesEntregados: 0 });
             return 'nuevo';
         }
         const actual = snap.val();
         if (cantidad > actual.crystals) {
-            await fbFns.set(nodo, { name: nombre, crystals: cantidad, entregado: !!actual.entregado });
+            await fbFns.set(nodo, { name: nombre, crystals: cantidad, viajesEntregados: actual.viajesEntregados || 0 });
             return 'actualizado';
         }
         return 'ignorado';
     }
 
-    // Modo local
-    const existente = pandillaData.find(p => p.name.toLowerCase() === nombre.toLowerCase());
-    let resultado;
+    const existente = datosHoy.find(p => p.clave === clave);
     if (!existente) {
-        pandillaData.push({ name: nombre, crystals: cantidad, entregado: false });
-        resultado = 'nuevo';
-    } else if (cantidad > existente.crystals) {
+        if (datosHoy.length >= MAX_JUGADORES) return 'limite';
+        datosHoy.push({ clave, name: nombre, crystals: cantidad, viajesEntregados: 0 });
+        guardarLocalHoy(); renderTodo();
+        return 'nuevo';
+    }
+    if (cantidad > existente.crystals) {
         existente.crystals = cantidad;
-        resultado = 'actualizado';
+        guardarLocalHoy(); renderTodo();
+        return 'actualizado';
+    }
+    return 'ignorado';
+}
+
+async function eliminarJugadorHoy(clave) {
+    if (modoFirebaseActivo()) {
+        await fbFns.remove(fbFns.child(refJugadoresHoy, clave));
+        return;
+    }
+    datosHoy = datosHoy.filter(p => p.clave !== clave);
+    guardarLocalHoy(); renderTodo();
+}
+
+async function reiniciarHoy() {
+    if (modoFirebaseActivo()) {
+        await fbFns.remove(refJugadoresHoy);
+        return;
+    }
+    datosHoy = [];
+    guardarLocalHoy(); renderTodo();
+}
+
+// Ajusta viajes entregados en Día Actual o Día Anterior (única edición
+// permitida en el día cerrado). Se limita entre 0 y los viajes disponibles.
+async function ajustarViajes(dia, clave, delta) {
+    const coleccion = dia === 'hoy' ? datosHoy : datosAyer;
+    const jugador = coleccion.find(p => p.clave === clave);
+    if (!jugador) return;
+
+    const disponibles = viajesDisponiblesDe(jugador.crystals);
+    const nuevo = Math.min(disponibles, Math.max(0, jugador.viajesEntregados + delta));
+    if (nuevo === jugador.viajesEntregados) return;
+
+    if (modoFirebaseActivo()) {
+        const refBase = dia === 'hoy' ? refJugadoresHoy : refJugadoresAyer;
+        await fbFns.set(fbFns.child(refBase, clave), { name: jugador.name, crystals: jugador.crystals, viajesEntregados: nuevo });
     } else {
-        resultado = 'ignorado';
-    }
-    renderTablas();
-    guardarLocal();
-    return resultado;
-}
-
-async function eliminarJugador(nombre) {
-    if (FIREBASE_LISTO && db) {
-        const clave = normalizarClave(nombre);
-        await fbFns.remove(fbFns.child(refJugadores, clave));
-        return;
-    }
-    pandillaData = pandillaData.filter(p => p.name !== nombre);
-    renderTablas();
-    guardarLocal();
-}
-
-async function toggleEntregado(nombre, valor) {
-    if (FIREBASE_LISTO && db) {
-        const clave = normalizarClave(nombre);
-        const nodo = fbFns.child(refJugadores, clave);
-        const snap = await fbFns.get(nodo);
-        if (snap.exists()) {
-            const actual = snap.val();
-            await fbFns.set(nodo, { ...actual, entregado: valor });
-        }
-        return;
-    }
-    const jugador = pandillaData.find(p => p.name === nombre);
-    if (jugador) {
-        jugador.entregado = valor;
-        guardarLocal();
-        renderTablas();
+        jugador.viajesEntregados = nuevo;
+        dia === 'hoy' ? guardarLocalHoy() : guardarLocalAyer();
+        renderTodo();
     }
 }
 
-async function reiniciarTodo() {
-    if (FIREBASE_LISTO && db) {
-        await fbFns.remove(refJugadores);
-        await fbFns.set(refLastReset, Date.now());
-        return;
-    }
-    pandillaData = [];
-    guardarLocal();
-    localStorage.setItem(CLAVE_LOCAL_RESET, String(Date.now()));
-    renderTablas();
-}
-
-// ---------- SEÑAL EN VIVO ----------
+// ---------- SEÑAL EN VIVO Y RELOJ ----------
 function marcarSeñal(activa, texto) {
-    const punto = document.getElementById('punto-señal');
-    const label = document.getElementById('texto-señal');
-    punto.classList.toggle('offline', !activa);
-    label.textContent = texto;
+    document.getElementById('punto-señal').classList.toggle('offline', !activa);
+    document.getElementById('texto-señal').textContent = texto;
 }
-
-// ---------- RELOJ EN VIVO ----------
 function actualizarReloj() {
     const ahora = new Date();
     const hh = String(ahora.getHours()).padStart(2, '0');
@@ -515,72 +709,158 @@ function actualizarReloj() {
 setInterval(actualizarReloj, 1000);
 actualizarReloj();
 
-// ---------- RENDER ----------
+// ---------- PESTAÑAS ----------
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        vistaActual = btn.dataset.tab;
+        document.querySelectorAll('.vista').forEach(v => v.classList.add('hidden'));
+        document.getElementById('vista-' + vistaActual).classList.remove('hidden');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-activo'));
+        btn.classList.add('tab-activo');
+    });
+});
+
+// ============================================================
+// RENDER
+// ============================================================
 function escapeHTML(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 }
 
-function renderTablas() {
-    const ordenado = [...pandillaData].sort((a, b) => b.crystals - a.crystals);
+function renderTodo() {
+    renderDia('hoy', datosHoy, 'hoy-top8', 'hoy-otros', true);
+    renderDia('ayer', datosAyer, 'ayer-top8', 'ayer-otros', false);
+    renderHistorico();
+    renderDespachos();
+    document.getElementById('contador-hoy').textContent = `${datosHoy.length}/${MAX_JUGADORES}`;
+}
 
-    const top8Body = document.getElementById('tabla-top8');
-    const otros8Body = document.getElementById('tabla-otros8');
-    top8Body.innerHTML = '';
-    otros8Body.innerHTML = '';
+function filaViajes(dia, jugador) {
+    const disponibles = viajesDisponiblesDe(jugador.crystals);
+    if (disponibles === 0) {
+        return `<span class="text-zinc-700 text-[10px]">—</span>`;
+    }
+    return `
+        <div class="flex items-center gap-1 justify-end">
+            <button class="stepper-btn btn-viaje" data-dia="${dia}" data-clave="${jugador.clave}" data-delta="-1" ${jugador.viajesEntregados <= 0 ? 'disabled' : ''}>−</button>
+            <span class="mono text-[10px] sm:text-xs w-10 text-center">${jugador.viajesEntregados}/${disponibles}</span>
+            <button class="stepper-btn btn-viaje" data-dia="${dia}" data-clave="${jugador.clave}" data-delta="1" ${jugador.viajesEntregados >= disponibles ? 'disabled' : ''}>+</button>
+        </div>`;
+}
+
+function renderDia(dia, datos, idTop, idOtros, permiteBorrar) {
+    const ordenado = [...datos].sort((a, b) => b.crystals - a.crystals);
+    const top = document.getElementById(idTop);
+    const otros = document.getElementById(idOtros);
+    top.innerHTML = '';
+    otros.innerHTML = '';
 
     for (let i = 0; i < 8; i++) {
         if (!ordenado[i]) break;
-        const jugador = ordenado[i];
+        const j = ordenado[i];
         const esOro = i === 0;
-        const filaEntregada = jugador.entregado ? 'fila-entregada' : '';
-        top8Body.innerHTML += `
-            <tr class="hover:bg-zinc-800/30 transition-colors ${esOro ? 'fila-oro' : ''} ${filaEntregada}">
+        const rocas = rocasDe(j.crystals);
+        const calif = cumpleMeta(j.crystals);
+        top.innerHTML += `
+            <tr class="hover:bg-zinc-800/30 transition-colors ${esOro ? 'fila-oro' : ''}">
                 <td class="py-3 pr-1 font-bold ${esOro ? 'text-[color:var(--oro)]' : 'text-red-500'}">#${i + 1}</td>
-                <td class="font-bold">
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" data-nombre="${escapeHTML(jugador.name)}" class="chk-entregado accent-green-600 w-4 h-4 shrink-0" ${jugador.entregado ? 'checked' : ''}/>
-                        <span class="nombre-jugador">${esOro ? '👑 ' : ''}${escapeHTML(jugador.name)}</span>
-                    </label>
+                <td class="font-bold">${esOro ? '👑 ' : ''}${escapeHTML(j.name)}</td>
+                <td class="text-right whitespace-nowrap">
+                    <span class="font-black text-zinc-300">${j.crystals.toLocaleString()}</span>
+                    <span class="block text-[9px] ${calif ? 'text-zinc-500' : 'text-red-800'}">${rocas} rocas${calif ? '' : ' · no califica'}</span>
                 </td>
-                <td class="text-right font-black text-zinc-300 whitespace-nowrap">
-                    ${jugador.crystals.toLocaleString()}
-                    ${jugador.entregado ? '<span class="ml-1.5 text-[8px] sm:text-[9px] bg-green-800/60 text-green-300 px-1.5 py-0.5 rounded uppercase tracking-wide align-middle">Repartido</span>' : ''}
-                </td>
-                <td class="text-right boton-borrar-fila">
-                    <button data-nombre="${escapeHTML(jugador.name)}" class="btn-borrar text-zinc-600 hover:text-red-500 text-xs cursor-pointer" title="Borrar jugador">✖</button>
-                </td>
+                <td class="text-right">${filaViajes(dia, j)}</td>
+                <td class="text-right">${permiteBorrar ? `<button data-clave="${j.clave}" class="btn-borrar text-zinc-600 hover:text-red-500 text-xs cursor-pointer" title="Borrar">✖</button>` : ''}</td>
             </tr>`;
     }
 
-    for (let i = 8; i < 16; i++) {
+    for (let i = 8; i < datos.length; i++) {
         if (!ordenado[i]) break;
-        otros8Body.innerHTML += `
-            <tr class="hover:bg-zinc-800/30 transition-colors text-zinc-400">
-                <td class="py-3 pr-1 font-bold text-zinc-600">#${i + 1}</td>
-                <td>${escapeHTML(ordenado[i].name)}</td>
-                <td class="text-right font-bold text-zinc-500">${ordenado[i].crystals.toLocaleString()}</td>
-                <td class="text-right boton-borrar-fila">
-                    <button data-nombre="${escapeHTML(ordenado[i].name)}" class="btn-borrar text-zinc-700 hover:text-red-500 text-xs cursor-pointer" title="Borrar jugador">✖</button>
-                </td>
+        const j = ordenado[i];
+        otros.innerHTML += `
+            <tr class="hover:bg-zinc-800/30 transition-colors text-zinc-400 fila-compacta">
+                <td class="py-1 pr-1 font-bold text-zinc-600">#${i + 1}</td>
+                <td>${escapeHTML(j.name)}</td>
+                <td class="text-right font-bold text-zinc-500">${j.crystals.toLocaleString()}</td>
+                <td class="text-right">${filaViajes(dia, j)}</td>
+                <td class="text-right">${permiteBorrar ? `<button data-clave="${j.clave}" class="btn-borrar text-zinc-700 hover:text-red-500 text-[10px] cursor-pointer" title="Borrar">✖</button>` : ''}</td>
             </tr>`;
     }
 
-    document.querySelectorAll('.btn-borrar').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const nombre = btn.getAttribute('data-nombre');
-            if (!confirm(`¿Quitar a "${nombre}" del registro?`)) return;
-            eliminarJugador(nombre).then(() => mostrarToast(`Jugador "${nombre}" eliminado`, 'info'));
+    if (permiteBorrar) {
+        [...top.querySelectorAll('.btn-borrar'), ...otros.querySelectorAll('.btn-borrar')].forEach(btn => {
+            btn.addEventListener('click', () => {
+                const clave = btn.getAttribute('data-clave');
+                const jugador = datos.find(p => p.clave === clave);
+                if (!confirm(`¿Quitar a "${jugador ? jugador.name : clave}" del día actual?`)) return;
+                eliminarJugadorHoy(clave).then(() => mostrarToast('Jugador eliminado del día actual', 'info'));
+            });
         });
-    });
+    }
 
-    document.querySelectorAll('.chk-entregado').forEach(chk => {
-        chk.addEventListener('change', () => {
-            const nombre = chk.getAttribute('data-nombre');
-            toggleEntregado(nombre, chk.checked);
+    [...top.querySelectorAll('.btn-viaje'), ...otros.querySelectorAll('.btn-viaje')].forEach(btn => {
+        btn.addEventListener('click', () => {
+            ajustarViajes(btn.getAttribute('data-dia'), btn.getAttribute('data-clave'), parseInt(btn.getAttribute('data-delta'), 10));
         });
     });
+}
+
+function renderHistorico() {
+    const cuerpo = document.getElementById('historico-tabla');
+    cuerpo.innerHTML = '';
+    const ordenado = [...datosHistorico].sort((a, b) => b.crystals - a.crystals).slice(0, 50);
+    ordenado.forEach((j, i) => {
+        cuerpo.innerHTML += `
+            <tr class="hover:bg-zinc-800/30 transition-colors ${i === 0 ? 'fila-oro' : ''}">
+                <td class="py-2 pr-1 font-bold ${i === 0 ? 'text-[color:var(--oro)]' : 'text-zinc-500'}">#${i + 1}</td>
+                <td class="font-bold">${i === 0 ? '👑 ' : ''}${escapeHTML(j.name)}</td>
+                <td class="text-right font-black text-zinc-300">${j.crystals.toLocaleString()}</td>
+                <td class="text-right text-zinc-500">${rocasDe(j.crystals).toLocaleString()}</td>
+            </tr>`;
+    });
+    if (ordenado.length === 0) {
+        cuerpo.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-zinc-700 text-xs">Aún no hay historial acumulado.</td></tr>`;
+    }
+}
+
+function pillsDeViajes(disponibles, entregados) {
+    if (disponibles === 0) return '<span class="text-zinc-700">—</span>';
+    let out = '';
+    for (let i = 0; i < disponibles; i++) out += i < entregados ? '🟩' : '⬜';
+    return out;
+}
+
+function renderDespachos() {
+    const contHoy = document.getElementById('despachos-hoy');
+    const contAyer = document.getElementById('despachos-ayer');
+    contHoy.innerHTML = '';
+    contAyer.innerHTML = '';
+
+    const califHoy = [...datosHoy].filter(j => cumpleMeta(j.crystals)).sort((a, b) => b.crystals - a.crystals);
+    const califAyer = [...datosAyer].filter(j => cumpleMeta(j.crystals)).sort((a, b) => b.crystals - a.crystals);
+
+    document.getElementById('despachos-hoy-vacio').classList.toggle('hidden', califHoy.length > 0);
+    document.getElementById('despachos-ayer-vacio').classList.toggle('hidden', califAyer.length > 0);
+
+    const tarjeta = (j) => {
+        const disponibles = viajesDisponiblesDe(j.crystals);
+        return `
+            <div class="bg-zinc-900/60 border border-zinc-800 rounded-lg px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                    <p class="font-bold text-sm text-zinc-200">${escapeHTML(j.name)}</p>
+                    <p class="text-[10px] text-zinc-500">${j.crystals.toLocaleString()} esencia · ${rocasDe(j.crystals)} rocas</p>
+                </div>
+                <div class="text-right">
+                    <p class="tracking-wider text-sm">${pillsDeViajes(disponibles, j.viajesEntregados)}</p>
+                    <p class="text-[9px] text-zinc-600 mono">${j.viajesEntregados}/${disponibles} viajes</p>
+                </div>
+            </div>`;
+    };
+
+    contHoy.innerHTML = califHoy.map(tarjeta).join('');
+    contAyer.innerHTML = califAyer.map(tarjeta).join('');
 }
 
 // ---------- TOASTS ----------
@@ -593,49 +873,61 @@ function mostrarToast(msg, tipo) {
     toastTimer = setTimeout(() => { toast.className = 'toast ' + (tipo || 'info'); }, 3800);
 }
 
-// ---------- EXPORTAR JPG ----------
-document.getElementById('btn-exportar').addEventListener('click', () => {
-    const node = document.getElementById('reporte-visual');
-    document.querySelectorAll('.boton-borrar-fila').forEach(td => td.style.visibility = 'hidden');
-    html2canvas(node, { backgroundColor: '#050506' }).then(canvas => {
-        document.querySelectorAll('.boton-borrar-fila').forEach(td => td.style.visibility = '');
-        const link = document.createElement('a');
-        link.download = 'Reporte_Mafia_Exotic_OneState.jpg';
-        link.href = canvas.toDataURL('image/jpeg');
-        link.click();
+// ---------- EXPORTAR JPG (reutilizable para cualquier contenedor) ----------
+document.querySelectorAll('.btn-exportar').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const contenedorId = btn.getAttribute('data-exportar');
+        const nombreArchivo = btn.getAttribute('data-nombre') || 'Reporte_Mafia_Exotic';
+        const node = document.getElementById(contenedorId);
+        const botonesOcultar = node.querySelectorAll('.btn-borrar, .btn-viaje');
+        botonesOcultar.forEach(b => b.style.visibility = 'hidden');
+
+        html2canvas(node, { backgroundColor: '#050506' }).then(canvas => {
+            botonesOcultar.forEach(b => b.style.visibility = '');
+            const link = document.createElement('a');
+            link.download = `${nombreArchivo}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg');
+            link.click();
+        }).catch(err => {
+            botonesOcultar.forEach(b => b.style.visibility = '');
+            console.error('Error al exportar JPG:', err);
+            mostrarToast('No se pudo generar el JPG, revisa la consola', 'err');
+        });
     });
 });
 
-// ---------- REINICIAR TODO ----------
+// ---------- REINICIAR DÍA ACTUAL ----------
 document.getElementById('btn-reiniciar').addEventListener('click', async () => {
-    if (!confirm('¿Seguro que quieres borrar TODO el registro? El panel quedará vacío para todos los que usan esta web.')) return;
-    await reiniciarTodo();
-    mostrarToast('Registro reiniciado para todos', 'info');
+    if (!confirm('¿Seguro que quieres borrar TODO el registro del día actual? El histórico y el día anterior no se ven afectados.')) return;
+    await reiniciarHoy();
+    mostrarToast('Día actual reiniciado', 'info');
 });
 
-// ---------- ENTRADA MANUAL ----------
+// ---------- ENTRADA MANUAL (solo Día Actual) ----------
 document.getElementById('form-manual').addEventListener('submit', async (e) => {
     e.preventDefault();
     const nombreInput = document.getElementById('manual-nombre');
     const cantidadInput = document.getElementById('manual-cantidad');
     const nombre = nombreInput.value.trim();
     const cantidad = parseInt(cantidadInput.value, 10);
-
     if (!nombre || isNaN(cantidad)) return;
 
-    const resultado = await procesarJugador(nombre, cantidad);
+    const resultado = await procesarJugadorHoy(nombre, cantidad);
     const mensajes = {
         nuevo: `✅ "${nombre}" registrado con ${cantidad.toLocaleString()}`,
         actualizado: `⬆️ "${nombre}" actualizado a ${cantidad.toLocaleString()}`,
         ignorado: `⏸️ "${nombre}" ya tiene un valor igual o mayor guardado, se ignoró`,
+        limite: `🚫 Límite de ${MAX_JUGADORES} jugadores alcanzado, no se puede agregar más`,
         invalido: 'Datos inválidos'
     };
-    mostrarToast(mensajes[resultado], resultado === 'ignorado' ? 'info' : 'ok');
+    mostrarToast(mensajes[resultado], resultado === 'ok' || resultado === 'nuevo' || resultado === 'actualizado' ? 'ok' : (resultado === 'invalido' || resultado === 'limite' ? 'err' : 'info'));
     nombreInput.value = '';
     cantidadInput.value = '';
 });
 
-// ---------- OCR (Tesseract.js) — parser por coordenadas, ahora con varias imágenes ----------
+// ============================================================
+// OCR (Tesseract.js) — Reconocimiento Basado en Anclas (v2.0)
+// ============================================================
 const inputArchivo = document.getElementById('screenshot-input');
 const overlay = document.getElementById('ocr-overlay');
 const progresoTexto = document.getElementById('ocr-progress');
@@ -663,9 +955,8 @@ inputArchivo.addEventListener('change', async (e) => {
                     }
                 }
             });
-
             const palabras = resultado.data.words || [];
-            const filas = parsearPorColumnas(palabras, dims.width, dims.height, selectorColumna.value);
+            const filas = parsearPorAnclas(palabras, dims.width, dims.height, selectorColumna.value);
             filasCombinadas = combinarFilas(filasCombinadas, filas);
         } catch (err) {
             console.error(err);
@@ -680,21 +971,16 @@ inputArchivo.addEventListener('change', async (e) => {
         mostrarToast('No se detectaron filas de jugadores en las imágenes', 'err');
         return;
     }
-
     ocrPendiente = filasCombinadas;
     mostrarRevisionOCR(filasCombinadas);
 });
 
-// Combina resultados de varias capturas: si el mismo jugador aparece en más
-// de una imagen, se queda con el valor más alto (misma regla que el registro).
 function combinarFilas(base, nuevas) {
     const mapa = new Map(base.map(f => [f.name.toLowerCase(), f]));
     for (const fila of nuevas) {
         const clave = fila.name.toLowerCase();
         const existente = mapa.get(clave);
-        if (!existente || fila.crystals > existente.crystals) {
-            mapa.set(clave, fila);
-        }
+        if (!existente || fila.crystals > existente.crystals) mapa.set(clave, fila);
     }
     return Array.from(mapa.values());
 }
@@ -711,25 +997,21 @@ function obtenerDimensiones(file) {
 
 function traducirEstado(status) {
     const mapa = {
-        'loading tesseract core': 'Cargando motor',
-        'initializing tesseract': 'Inicializando',
-        'loading language traineddata': 'Cargando idioma',
-        'initializing api': 'Preparando',
+        'loading tesseract core': 'Cargando motor', 'initializing tesseract': 'Inicializando',
+        'loading language traineddata': 'Cargando idioma', 'initializing api': 'Preparando',
         'recognizing text': 'Leyendo texto'
     };
     return mapa[status] || status;
 }
 
-// Bandas horizontales (fracción del ancho de imagen) calibradas sobre la
-// pantalla de "Participantes" de la pandilla en OneState RP.
-const BANDA_MENU_LATERAL = 0.19;
-const BANDA_NOMBRE = [0.19, 0.50];
-const BANDAS_COLUMNAS = {
-    almacenamiento: [0.50, 0.615],
-    refinadores:    [0.615, 0.72],
-    transferido:    [0.72, 0.825],
-    entregado:      [0.825, 0.97]
+// ---- Bandas de RESPALDO (si no se detecta el encabezado real de la imagen) ----
+const BANDA_MENU_LATERAL_RESPALDO = 0.19;
+const BANDA_NOMBRE_RESPALDO = [0.19, 0.50];
+const BANDAS_COLUMNAS_RESPALDO = {
+    almacenamiento: [0.50, 0.615], refinadores: [0.615, 0.72],
+    transferido: [0.72, 0.825], entregado: [0.825, 0.97]
 };
+
 const PALABRAS_PROHIBIDAS = [
     'PARTICIPANTE', 'RESULTADO', 'PANDILLA', 'ESTADISTIC', 'ESTADÍSTIC',
     'HISTORIAL', 'CLASIFICACI', 'TOTAL', 'ACTUALIZ', 'AVANZAR', 'ATRAS',
@@ -738,10 +1020,26 @@ const PALABRAS_PROHIBIDAS = [
     'REFINADOR', 'TRANSFERIDO', 'ENTREGADO', 'CAPTURA', 'CARGADO'
 ];
 
-// Un token de la banda de "nombre" solo se acepta si: tiene al menos 2
-// caracteres, contiene alguna letra, no es una palabra del menú/interfaz,
-// y (cuando Tesseract da confianza) esa confianza no es demasiado baja —
-// así se filtran los símbolos y restos de menú que antes ensuciaban el nombre.
+// Anclas: palabras del encabezado real del juego. Se buscan por regex y su
+// posición (x,y) sirve para calcular las columnas dinámicamente en vez de
+// usar fracciones fijas del ancho — así no falla al cambiar de resolución,
+// recorte o dispositivo.
+const PATRONES_ANCLA = {
+    nombre: /PARTICIPANT/i,
+    almacenamiento: /ALMACENAM/i,
+    refinadores: /REFINADOR/i,
+    transferido: /TRANSFERI|CLASIF/i,
+    entregado: /ENTREGADO/i
+};
+
+function encontrarAncla(palabras, regex) {
+    const coincidencias = palabras.filter(w => regex.test(w.texto));
+    if (coincidencias.length === 0) return null;
+    const cx = coincidencias.reduce((s, w) => s + (w.x0 + w.x1) / 2, 0) / coincidencias.length;
+    const cy = coincidencias.reduce((s, w) => s + (w.y0 + w.y1) / 2, 0) / coincidencias.length;
+    return { cx, cy };
+}
+
 function esTokenDeNombreValido(w) {
     const t = w.texto;
     if (t.length < 2) return false;
@@ -752,12 +1050,6 @@ function esTokenDeNombreValido(w) {
     return true;
 }
 
-// El punto de "en línea/desconectado" junto al avatar, y a veces el borde
-// del propio avatar, quedan justo al inicio de la banda de nombre y el OCR
-// a veces los lee como una letra o par de letras sueltas (ej. "EA", "Y",
-// "a", "nn"). Esa letra suelta queda separada del nombre real por un salto
-// horizontal mucho más grande que el espacio normal entre palabras de un
-// mismo nombre, así que se puede detectar y descartar por geometría.
 function quitarTokenAisladoInicial(tokens, ancho) {
     let limpio = tokens;
     while (limpio.length > 1) {
@@ -767,26 +1059,65 @@ function quitarTokenAisladoInicial(tokens, ancho) {
         const saltoMinimoSospechoso = Math.max(38, ancho * 0.022);
         if (primero.texto.length <= 3 && salto > saltoMinimoSospechoso) {
             limpio = limpio.slice(1);
-        } else {
-            break;
-        }
+        } else break;
     }
     return limpio;
 }
 
-function parsearPorColumnas(palabras, ancho, alto, columnaElegida) {
-    const bandaValor = BANDAS_COLUMNAS[columnaElegida] || BANDAS_COLUMNAS.almacenamiento;
-
-    const utiles = palabras
+function parsearPorAnclas(palabrasCrudas, ancho, alto, columnaElegida) {
+    const palabras = palabrasCrudas
         .map(w => ({ texto: (w.text || '').trim(), x0: w.bbox.x0, x1: w.bbox.x1, y0: w.bbox.y0, y1: w.bbox.y1, confianza: w.confidence }))
         .filter(w => w.texto.length > 0)
-        .filter(w => /[A-Za-zÀ-ÿ0-9]/.test(w.texto))
-        .filter(w => w.x0 >= BANDA_MENU_LATERAL * ancho);
+        .filter(w => /[A-Za-zÀ-ÿ0-9]/.test(w.texto));
+
+    const anclaNombre = encontrarAncla(palabras, PATRONES_ANCLA.nombre);
+    const anclaAlmacen = encontrarAncla(palabras, PATRONES_ANCLA.almacenamiento);
+    const anclaRefin = encontrarAncla(palabras, PATRONES_ANCLA.refinadores);
+    const anclaTransf = encontrarAncla(palabras, PATRONES_ANCLA.transferido);
+    const anclaEntreg = encontrarAncla(palabras, PATRONES_ANCLA.entregado);
+    const totalAnclas = [anclaNombre, anclaAlmacen, anclaRefin, anclaTransf, anclaEntreg].filter(Boolean).length;
+
+    let bandaNombre, bandasColumnas, sidebarCutoff, headerY;
+
+    if (totalAnclas >= 3 && anclaNombre) {
+        const puntos = [
+            { clave: 'nombre', ancla: anclaNombre },
+            { clave: 'almacenamiento', ancla: anclaAlmacen },
+            { clave: 'refinadores', ancla: anclaRefin },
+            { clave: 'transferido', ancla: anclaTransf },
+            { clave: 'entregado', ancla: anclaEntreg }
+        ].filter(p => p.ancla).sort((a, b) => a.ancla.cx - b.ancla.cx);
+
+        bandasColumnas = {};
+        for (let i = 0; i < puntos.length; i++) {
+            const izq = i === 0
+                ? Math.max(0, puntos[i].ancla.cx - (puntos[i + 1] ? (puntos[i + 1].ancla.cx - puntos[i].ancla.cx) / 2 : puntos[i].ancla.cx * 0.4))
+                : (puntos[i - 1].ancla.cx + puntos[i].ancla.cx) / 2;
+            const der = i === puntos.length - 1
+                ? ancho
+                : (puntos[i].ancla.cx + puntos[i + 1].ancla.cx) / 2;
+            bandasColumnas[puntos[i].clave] = [izq / ancho, der / ancho];
+        }
+        bandaNombre = bandasColumnas.nombre || BANDA_NOMBRE_RESPALDO;
+        sidebarCutoff = (anclaNombre.cx * 0.55) / ancho;
+        headerY = Math.max(...[anclaNombre, anclaAlmacen, anclaRefin, anclaTransf, anclaEntreg].filter(Boolean).map(a => a.cy));
+    } else {
+        bandaNombre = BANDA_NOMBRE_RESPALDO;
+        bandasColumnas = BANDAS_COLUMNAS_RESPALDO;
+        sidebarCutoff = BANDA_MENU_LATERAL_RESPALDO;
+        headerY = 0;
+    }
+
+    const bandaValor = bandasColumnas[columnaElegida] || bandasColumnas.almacenamiento || BANDAS_COLUMNAS_RESPALDO.almacenamiento;
+
+    const utiles = palabras
+        .filter(w => w.x0 >= sidebarCutoff * ancho)
+        .filter(w => w.y0 > headerY + 3);
 
     if (utiles.length === 0) return [];
 
     utiles.sort((a, b) => a.y0 - b.y0);
-    const filas = [];
+    let filas = [];
     let filaActual = [];
     let yPromedio = null;
 
@@ -805,13 +1136,22 @@ function parsearPorColumnas(palabras, ancho, alto, columnaElegida) {
     }
     if (filaActual.length > 0) filas.push(filaActual);
 
+    // La fila de paginación ("ATRÁS" / números de página / "AVANZAR") marca el
+    // final real de la tabla. Todo lo que esté en o después de esa fila —
+    // incluida la fila destacada del dueño de la cuenta que aparece al final
+    // de la captura — se ignora por completo, sin importar el nombre.
+    const indiceNavegacion = filas.findIndex(fila =>
+        /AVANZAR|ATRAS|ATRÁS/i.test(fila.map(w => w.texto).join(' '))
+    );
+    if (indiceNavegacion !== -1) filas = filas.slice(0, indiceNavegacion);
+
     const encontrados = [];
     for (const fila of filas) {
         fila.sort((a, b) => a.x0 - b.x0);
 
         let tokensNombre = fila.filter(w => {
             const cx = (w.x0 + w.x1) / 2 / ancho;
-            return cx >= BANDA_NOMBRE[0] && cx <= BANDA_NOMBRE[1] && esTokenDeNombreValido(w);
+            return cx >= bandaNombre[0] && cx <= bandaNombre[1] && esTokenDeNombreValido(w);
         });
         tokensNombre = quitarTokenAisladoInicial(tokensNombre, ancho);
 
@@ -835,8 +1175,6 @@ function parsearPorColumnas(palabras, ancho, alto, columnaElegida) {
         encontrados.push({ name: nombre, crystals: cantidad });
     }
 
-    // Deduplica: la fila destacada del dueño de la cuenta (o de un MVP) al
-    // final de la captura repite la misma info de su fila normal en la tabla.
     const vistos = new Set();
     const sinDuplicados = [];
     for (const item of encontrados) {
@@ -850,10 +1188,9 @@ function parsearPorColumnas(palabras, ancho, alto, columnaElegida) {
 
 // ---------- REVISIÓN MANUAL ANTES DE CONFIRMAR ----------
 function mostrarRevisionOCR(filas) {
-    const cont = document.getElementById('ocr-review');
+    const cont = document.getElementById('ocr-review') || crearContenedorRevision();
     const lista = document.getElementById('ocr-review-list');
     lista.innerHTML = '';
-
     filas.forEach((fila, idx) => {
         lista.innerHTML += `
             <div class="flex items-center gap-2 bg-zinc-950/60 border border-zinc-800 rounded p-2">
@@ -864,7 +1201,6 @@ function mostrarRevisionOCR(filas) {
                 <button data-idx="${idx}" class="btn-quitar-ocr text-red-500 hover:text-red-400 text-sm px-1 sm:px-2 cursor-pointer shrink-0">✖</button>
             </div>`;
     });
-
     document.querySelectorAll('.btn-quitar-ocr').forEach(btn => {
         btn.addEventListener('click', () => {
             const idx = parseInt(btn.getAttribute('data-idx'), 10);
@@ -872,12 +1208,32 @@ function mostrarRevisionOCR(filas) {
             mostrarRevisionOCR(ocrPendiente);
         });
     });
-
     cont.classList.remove('hidden');
     cont.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-document.getElementById('btn-confirmar-ocr').addEventListener('click', async () => {
+function crearContenedorRevision() {
+    const div = document.createElement('div');
+    div.id = 'ocr-review';
+    div.className = 'hidden mt-8 bg-zinc-950/70 border-t-4 border-yellow-500 p-3 sm:p-4 rounded-lg shadow-xl';
+    div.innerHTML = `
+        <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-yellow-950/30 to-transparent p-2 rounded gap-2">
+            <h2 class="text-sm sm:text-base font-black tracking-wider text-yellow-400 uppercase">⚠️ Revisa lo que detectó el escaneo</h2>
+            <span class="text-[9px] sm:text-[10px] bg-yellow-500 text-black font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Confirmar</span>
+        </div>
+        <p class="text-[11px] sm:text-xs text-zinc-500 mb-3">El escaneo puede confundir letras o números. Corrige o borra lo necesario antes de aplicar.</p>
+        <div id="ocr-review-list" class="space-y-2 mb-4"></div>
+        <div class="flex flex-col sm:flex-row gap-3">
+            <button id="btn-confirmar-ocr" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-6 rounded text-xs uppercase tracking-wide cursor-pointer">✅ Aplicar al registro</button>
+            <button id="btn-cancelar-ocr" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2 px-6 rounded text-xs uppercase tracking-wide cursor-pointer">✖ Cancelar</button>
+        </div>`;
+    document.getElementById('vista-hoy').appendChild(div);
+    document.getElementById('btn-confirmar-ocr').addEventListener('click', confirmarOCR);
+    document.getElementById('btn-cancelar-ocr').addEventListener('click', cancelarOCR);
+    return div;
+}
+
+async function confirmarOCR() {
     const nombres = document.querySelectorAll('.ocr-input-name');
     const cantidades = document.querySelectorAll('.ocr-input-crystals');
 
@@ -888,24 +1244,25 @@ document.getElementById('btn-confirmar-ocr').addEventListener('click', async () 
         if (nombre.length >= 2 && !isNaN(cantidad)) filasFinales.push({ name: nombre, crystals: cantidad });
     });
 
-    let nuevos = 0, actualizados = 0, ignorados = 0;
+    let nuevos = 0, actualizados = 0, ignorados = 0, limite = 0;
     for (const fila of filasFinales) {
-        const resultado = await procesarJugador(fila.name, fila.crystals);
+        const resultado = await procesarJugadorHoy(fila.name, fila.crystals);
         if (resultado === 'nuevo') nuevos++;
         else if (resultado === 'actualizado') actualizados++;
         else if (resultado === 'ignorado') ignorados++;
+        else if (resultado === 'limite') limite++;
     }
 
     cancelarOCR();
-    mostrarToast(`✅ ${nuevos} nuevo(s), ⬆️ ${actualizados} actualizado(s), ⏸️ ${ignorados} sin cambio`, 'ok');
-});
-
-document.getElementById('btn-cancelar-ocr').addEventListener('click', cancelarOCR);
+    let msg = `✅ ${nuevos} nuevo(s), ⬆️ ${actualizados} actualizado(s), ⏸️ ${ignorados} sin cambio`;
+    if (limite > 0) msg += `, 🚫 ${limite} rechazado(s) por límite de ${MAX_JUGADORES}`;
+    mostrarToast(msg, 'ok');
+}
 
 function cancelarOCR() {
     ocrPendiente = [];
-    document.getElementById('ocr-review').classList.add('hidden');
-    document.getElementById('ocr-review-list').innerHTML = '';
+    const cont = document.getElementById('ocr-review');
+    if (cont) { cont.classList.add('hidden'); document.getElementById('ocr-review-list').innerHTML = ''; }
 }
 </script>
 </body>

@@ -407,14 +407,15 @@ function fechaHoyStr() {
 }
 
 function diaSiguienteStr(fechaStr) {
-    // La 'Z' al final fuerza la interpretación como UTC
     const d = new Date(fechaStr + 'T00:00:00Z');
     d.setUTCDate(d.getUTCDate() + 1);
     return formatoFecha(d);
 }
 
-function normalizarClave(nombre) {
-    return nombre.replace(/[.#$\[\]\/\s]+/g, '_').trim();
+function diaAnteriorAFechaStr(fechaStr) {
+    const d = new Date(fechaStr + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() - 1);
+    return formatoFecha(d);
 }
     
 // ---------- ACCESO CON CONTRASEÑA ----------
@@ -703,13 +704,11 @@ function marcarSeñal(activa, texto) {
 }
 function actualizarReloj() {
     const ahora = new Date();
-    const hh = String(ahora.getHours()).padStart(2, '0');
-    const mm = String(ahora.getMinutes()).padStart(2, '0');
-    const ss = String(ahora.getSeconds()).padStart(2, '0');
-    const dd = String(ahora.getDate()).padStart(2, '0');
-    const mo = String(ahora.getMonth() + 1).padStart(2, '0');
-    const yy = ahora.getFullYear();
-    document.getElementById('reloj').textContent = `${hh}:${mm}:${ss} - ${dd}/${mo}/${yy}`;
+    const hh = String(ahora.getUTCHours()).padStart(2, '0');
+    const mm = String(ahora.getUTCMinutes()).padStart(2, '0');
+    const ss = String(ahora.getUTCSeconds()).padStart(2, '0');
+    const el = document.getElementById('reloj');
+    if(el) el.textContent = `${hh}:${mm}:${ss} - ${formatoFecha(ahora)}`;
 }
 setInterval(actualizarReloj, 1000);
 actualizarReloj();

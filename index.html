@@ -20,6 +20,7 @@
         --carmesi: #b91c1c;
         --carmesi-glow: #ef4444;
         --oro: #c9a04a;
+        --oro-mvp: #facc15;
         --ceniza: #71717a;
         --hueso: #e6e4df;
     }
@@ -40,6 +41,18 @@
         position: fixed; inset:0; z-index: 0; pointer-events:none;
         opacity: 0.05; mix-blend-mode: overlay;
         background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    }
+
+    #canvas-fx{ position: fixed; inset: 0; z-index: -1; display: block; }
+
+    /* Luciérnagas del título: canvas propio, capa compuesta aparte (translateZ)
+       para que el navegador no repinte el resto del header en cada frame. */
+    #canvas-luciernagas{
+        width: 100%; height: 100%;
+        z-index: 5;
+        mix-blend-mode: screen;
+        transform: translateZ(0);
+        will-change: transform;
     }
 
     .cinta{
@@ -64,17 +77,60 @@
     }
 
     .fila-oro{ border-left: 3px solid var(--oro) !important; background: linear-gradient(90deg, rgba(201,160,74,0.08), transparent); }
+    .fila-mvp{ border-left: 3px solid var(--oro-mvp) !important; background: linear-gradient(90deg, rgba(250,204,21,0.10), transparent); }
     .fila-compacta td{ padding-top:2px; padding-bottom:2px; }
 
+    /* ---------- JERARQUÍA VISUAL DE JUGADORES ---------- */
+    .txt-mvp{
+        color: var(--oro-mvp);
+        text-shadow: 0 0 6px rgba(250,204,21,0.55), 0 0 14px rgba(250,204,21,0.30);
+        animation: pulso-mvp 2.4s ease-in-out infinite;
+        will-change: text-shadow;
+    }
+    @keyframes pulso-mvp{
+        0%,100%{ text-shadow: 0 0 6px rgba(250,204,21,0.55), 0 0 14px rgba(250,204,21,0.30); }
+        50%{ text-shadow: 0 0 12px rgba(250,204,21,0.95), 0 0 26px rgba(250,204,21,0.55); }
+    }
+    .txt-calificado{ color: var(--oro); font-weight: 700; }
+    .txt-no-calificado{ color: var(--hueso); opacity: 0.65; }
+
+    /* ---------- STEPPER + FLASH DE FEEDBACK (60fps: transform/opacity/color) ---------- */
     .tab-btn{
         font-family: 'Rajdhani', sans-serif; font-weight:700; text-transform:uppercase;
         letter-spacing:0.08em; font-size:11px; padding:10px 14px;
         color:#71717a; border-bottom:2px solid transparent; white-space:nowrap;
-        cursor:pointer; transition: all .15s ease;
+        cursor:pointer; transition: color .15s ease, border-color .15s ease;
     }
     .tab-btn:hover{ color:#d4d4d8; }
     .tab-btn.tab-activo{ color:#ef4444; border-bottom-color:#b91c1c; }
+
+    .vista{ opacity: 1; will-change: opacity; transition: opacity .18s ease; }
     .vista.hidden{ display:none; }
+
+    /* ---------- NAVEGACIÓN HORIZONTAL ACELERADA POR HARDWARE ---------- */
+    /* El viewport recorta; el track es UNA capa compuesta que se desplaza
+       con translate3d — no hay reflow porque no se toca width/left/display,
+       solo 'transform', que el compositor mueve directo en la GPU. */
+    #vistas-viewport{ overflow: hidden; position: relative; }
+    #vistas-track{
+        display: flex;
+        width: 600%;                 /* 6 subpáginas x 100% del viewport cada una */
+        transform: translate3d(0, 0, 0);
+        transition: transform .5s cubic-bezier(.22, 1, .36, 1);
+        will-change: transform;
+        backface-visibility: hidden;
+    }
+    #vistas-track > .vista{
+        width: calc(100% / 6);
+        flex: 0 0 calc(100% / 6);
+        min-width: 0;
+    }
+    /* Dentro del track ya no se usa display:none para ocultar: todas las
+       subpáginas existen en el DOM y layout todo el tiempo, solo quedan
+       fuera del viewport visible. Evita reflow al conmutar. */
+    #vistas-track > .vista.hidden{ display: block; }
+
+    .modal-card{ transition: transform .3s ease, opacity .3s ease; will-change: transform, opacity; }
 
     .badge-caja-abierta{ background:#14532d; color:#86efac; }
     .badge-caja-cerrada{ background:#450a0a; color:#fca5a5; }
@@ -83,9 +139,25 @@
         width:22px; height:22px; display:flex; align-items:center; justify-content:center;
         border-radius:4px; background:#27272a; color:#d4d4d8; font-weight:700; cursor:pointer;
         font-size:13px; line-height:1; user-select:none;
+        transition: background .15s ease, transform .1s ease;
+        will-change: transform;
     }
     .stepper-btn:hover{ background:#3f3f46; }
+    .stepper-btn:active{ transform: scale(0.88); }
     .stepper-btn:disabled{ opacity:0.3; cursor:not-allowed; }
+
+    .viajes-num{ display:inline-block; will-change: transform, color; }
+    .flash-num{ animation: flash-pop .55s cubic-bezier(.22,1.4,.36,1); }
+    @keyframes flash-pop{
+        0%{ transform: scale(1); color: inherit; }
+        30%{ transform: scale(1.4); color: #4ade80; }
+        100%{ transform: scale(1); color: inherit; }
+    }
+
+    /* Pips de despachos (blanco = disponible / verde = entregado) */
+    .pip{ width:10px; height:10px; border-radius:2px; display:inline-block; will-change: transform; }
+    .pip-pending{ background: var(--hueso); opacity:0.35; box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset; }
+    .pip-ok{ background:#22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.65); }
 
     .ocr-overlay{
         position: fixed; inset: 0; background: rgba(2,2,3,0.92);
@@ -106,8 +178,10 @@
         font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase;
         box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         border-left: 4px solid transparent;
-        transform: translateY(16px); opacity: 0; transition: all 0.25s ease;
+        transform: translateY(16px); opacity: 0;
+        transition: transform 0.25s ease, opacity 0.25s ease;
         pointer-events: none; max-width: 320px; margin-left: auto;
+        will-change: transform, opacity;
     }
     @media (min-width: 640px){ .toast{ left: auto; bottom: 20px; right: 20px; } }
     .toast.show{ transform: translateY(0); opacity: 1; }
@@ -123,15 +197,23 @@
 </head>
 <body class="grano text-zinc-100 min-h-screen p-3 sm:p-4 md:p-8">
 
-<!-- ACCESO CON CONTRASEÑA -->
+<!-- CANVAS DE ATMÓSFERA (nebulosa / humo + gravedad de puntero + onda de choque) -->
+<canvas id="canvas-fx"></canvas>
+
+<!-- ACCESO DUAL DE ALTA SEGURIDAD: Usuario (operador) + Contraseña maestra -->
 <div id="login-gate" class="fixed inset-0 z-[100] bg-black flex items-center justify-center p-4">
-    <div class="bg-zinc-950 border border-red-900/50 rounded-lg p-6 sm:p-8 max-w-xs w-full text-center shadow-2xl">
+    <div class="modal-card bg-zinc-950 border border-red-900/50 rounded-lg p-6 sm:p-8 max-w-xs w-full text-center shadow-2xl">
         <p class="gang-title text-red-600 text-2xl sm:text-3xl mb-1 uppercase">Mafia Exotic</p>
-        <p class="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-widest mb-6">Acceso restringido</p>
+        <p class="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-widest mb-1">Acceso restringido</p>
+        <p class="text-amber-600 text-[9px] uppercase tracking-[0.2em] mb-6">Autenticación dual de operador</p>
+
+        <input type="text" id="login-usuario" placeholder="Usuario / alias de operador" maxlength="30"
+            class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2.5 text-sm text-zinc-200 mb-3 text-center outline-none focus:border-amber-600" />
         <input type="password" id="login-password" placeholder="Contraseña de acceso"
             class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2.5 text-sm text-zinc-200 mb-3 text-center outline-none focus:border-red-700" />
         <button id="login-btn" class="w-full bg-red-700 hover:bg-red-600 active:bg-red-800 text-white font-bold text-xs uppercase tracking-wide px-4 py-2.5 rounded cursor-pointer transition-colors">Entrar</button>
-        <p id="login-error" class="text-red-500 text-xs mt-3 hidden">Contraseña incorrecta</p>
+        <p id="login-error" class="text-red-500 text-xs mt-3 hidden">Usuario o contraseña inválidos</p>
+        <p class="text-zinc-700 text-[9px] mt-4 leading-relaxed">Cada acción quedará firmada con tu nombre de operador para trazabilidad de auditoría.</p>
     </div>
 </div>
 
@@ -153,17 +235,21 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div class="w-full md:w-auto">
                 <p class="text-[10px] md:text-[11px] tracking-[0.25em] md:tracking-[0.3em] text-red-700 uppercase mb-1">— Expediente de Operaciones —</p>
-                <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-red-600 tracking-wide gang-title uppercase leading-none break-words">Mafia Exotic</h1>
+                <div id="titulo-luciernagas" class="relative inline-block">
+                    <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-red-600 tracking-wide gang-title uppercase leading-none break-words">Mafia Exotic</h1>
+                    <canvas id="canvas-luciernagas" class="pointer-events-none absolute -inset-3 sm:-inset-4"></canvas>
+                </div>
                 <p class="text-zinc-500 tracking-[0.15em] md:tracking-[0.2em] text-[10px] md:text-xs uppercase mt-2">Módulo de Esencia de Cristales · OneState RP</p>
             </div>
 
-            <!-- SEÑAL EN VIVO + RELOJ -->
-            <div class="bg-zinc-950/80 border border-zinc-800 rounded-lg px-4 py-3 flex flex-col items-start md:items-end gap-1 w-full md:w-auto md:min-w-[220px]">
+            <!-- SEÑAL EN VIVO + RELOJ UTC+0 + OPERADOR -->
+            <div class="bg-zinc-950/80 border border-zinc-800 rounded-lg px-4 py-3 flex flex-col items-start md:items-end gap-1 w-full md:w-auto md:min-w-[240px]">
                 <div class="flex items-center gap-2">
                     <span id="punto-señal" class="punto-vivo offline"></span>
                     <span id="texto-señal" class="text-[11px] tracking-widest text-zinc-400 uppercase mono">Conectando señal...</span>
                 </div>
-                <p id="reloj" class="mono text-red-500 font-bold text-base sm:text-lg tracking-wider">--:--:-- - --/--/----</p>
+                <p id="reloj" class="mono text-red-500 font-bold text-base sm:text-lg tracking-wider">--:--:-- UTC · --/--/----</p>
+                <p class="text-[10px] text-zinc-600 uppercase tracking-widest">Operador: <span id="operador-actual" class="text-zinc-300 font-bold">—</span></p>
             </div>
         </div>
     </header>
@@ -174,13 +260,21 @@
         <button class="tab-btn" data-tab="ayer">02 · Día Anterior</button>
         <button class="tab-btn" data-tab="historico">03 · Histórico General</button>
         <button class="tab-btn" data-tab="despachos">04 · Despachos</button>
+        <button class="tab-btn" data-tab="historial">05 · Historial de Despachos</button>
+        <button class="tab-btn" data-tab="analitica">06 · Analítica</button>
     </nav>
+
+    <!-- Viewport + track: navegación horizontal por transform: translate3d(),
+         sin display:none. El viewport recorta con overflow-hidden y el track
+         (6 slides al 100% cada uno) se desplaza como una sola capa compuesta. -->
+    <div id="vistas-viewport">
+    <div id="vistas-track">
 
     <!-- ==================== VISTA 1: DÍA ACTUAL ==================== -->
     <div id="vista-hoy" class="vista">
 
         <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <p class="text-xs text-zinc-500 uppercase tracking-wide">Fecha: <span id="fecha-hoy" class="text-zinc-300 mono">--</span></p>
+            <p class="text-xs text-zinc-500 uppercase tracking-wide">Fecha (UTC+0): <span id="fecha-hoy" class="text-zinc-300 mono">--</span></p>
             <div class="flex items-center gap-2">
                 <span id="badge-caja-hoy" class="text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wide badge-caja-abierta">🟢 Caja Abierta</span>
                 <span id="contador-hoy" class="text-[10px] text-zinc-500 mono">0/50</span>
@@ -216,6 +310,9 @@
         </div>
 
         <div class="mb-6 flex flex-col sm:flex-row justify-end gap-3">
+            <button id="btn-traspaso" class="bg-zinc-950 border border-amber-800/60 hover:border-amber-500 hover:text-amber-400 text-amber-600 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
+                🔁 Traspaso de Turno
+            </button>
             <button id="btn-reiniciar" class="bg-zinc-950 border border-zinc-800 hover:border-red-800 hover:text-red-500 text-zinc-500 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
                 🗑️ Reiniciar Día Actual
             </button>
@@ -267,10 +364,10 @@
     <!-- ==================== VISTA 2: DÍA ANTERIOR ==================== -->
     <div id="vista-ayer" class="vista hidden">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <p class="text-xs text-zinc-500 uppercase tracking-wide">Fecha: <span id="fecha-ayer" class="text-zinc-300 mono">--</span></p>
+            <p class="text-xs text-zinc-500 uppercase tracking-wide">Fecha (UTC+0): <span id="fecha-ayer" class="text-zinc-300 mono">--</span></p>
             <span class="text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wide badge-caja-cerrada">🔒 Caja Cerrada</span>
         </div>
-        <p class="text-[11px] text-zinc-600 mb-4">Las esencias de este día ya no se pueden modificar (ni por OCR ni manual). Solo puedes marcar los <b class="text-zinc-400">viajes entregados</b>.</p>
+        <p class="text-[11px] text-zinc-600 mb-4">Las esencias de este día ya no se pueden modificar (ni por OCR ni manual). Solo puedes marcar los <b class="text-zinc-400">viajes entregados</b> o autorizar excepciones de deuda.</p>
 
         <div class="relative grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-3 sm:p-5 bg-[#050506] border border-zinc-800 rounded-xl">
             <div class="bg-zinc-950/70 border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
@@ -308,7 +405,7 @@
 
     <!-- ==================== VISTA 3: HISTÓRICO GENERAL ==================== -->
     <div id="vista-historico" class="vista hidden">
-        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-4">Suma total histórica por jugador (solo lectura) · Top 50</p>
+        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-4">Suma total histórica por jugador (solo lectura, salvo renombrado) · Top 50</p>
         <div class="bg-zinc-950/70 border-t-4 border-[color:var(--oro)] p-3 sm:p-4 rounded-lg shadow-xl">
             <div class="overflow-x-auto max-h-[560px]">
                 <table class="w-full text-left border-collapse text-xs sm:text-sm">
@@ -325,8 +422,8 @@
 
     <!-- ==================== VISTA 4: DESPACHOS / LOGÍSTICA ==================== -->
     <div id="vista-despachos" class="vista hidden">
-        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-1">Solo jugadores que cumplieron la meta mínima (≥ 200 esencias = 20 rocas)</p>
-        <p class="text-[11px] text-zinc-600 mb-4">Cada 50 esencias adicionales genera 1 viaje disponible. 🟩 = viaje entregado · ⬜ = viaje pendiente.</p>
+        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-1">Habilitados: todo jugador con ≥ 50 esencias (1 viaje o más disponible)</p>
+        <p class="text-[11px] text-zinc-600 mb-4">Cada 50 esencias genera 1 viaje disponible · Nombre dorado = cumple meta mínima de 200 esencias. <span class="pip pip-pending align-middle inline-block mx-1"></span> pendiente · <span class="pip pip-ok align-middle inline-block mx-1"></span> entregado.</p>
 
         <div class="mb-6 flex justify-end">
             <button data-exportar="reporte-despachos" data-nombre="Reporte_Despachos_Mafia_Exotic" class="btn-exportar bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
@@ -336,17 +433,74 @@
 
         <div id="reporte-despachos" class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-3 sm:p-5 bg-[#050506] border border-zinc-800 rounded-xl">
             <div class="bg-zinc-950/70 border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
-                <h2 class="text-sm sm:text-base font-black tracking-wider text-red-500 uppercase mb-3">📦 Día Actual — Califican</h2>
+                <h2 class="text-sm sm:text-base font-black tracking-wider text-red-500 uppercase mb-3">📦 Día Actual — Habilitados</h2>
                 <div id="despachos-hoy" class="space-y-2"></div>
-                <p id="despachos-hoy-vacio" class="text-xs text-zinc-600 hidden">Nadie ha llegado a la meta mínima hoy todavía.</p>
+                <p id="despachos-hoy-vacio" class="text-xs text-zinc-600 hidden">Nadie ha llegado a las 50 esencias hoy todavía.</p>
             </div>
             <div class="bg-zinc-950/70 border-t-4 border-zinc-700 p-3 sm:p-4 rounded-lg shadow-xl">
-                <h2 class="text-sm sm:text-base font-black tracking-wider text-zinc-400 uppercase mb-3">📦 Día Anterior — Califican</h2>
+                <h2 class="text-sm sm:text-base font-black tracking-wider text-zinc-400 uppercase mb-3">📦 Día Anterior — Habilitados</h2>
                 <div id="despachos-ayer" class="space-y-2"></div>
-                <p id="despachos-ayer-vacio" class="text-xs text-zinc-600 hidden">Nadie llegó a la meta mínima el día anterior.</p>
+                <p id="despachos-ayer-vacio" class="text-xs text-zinc-600 hidden">Nadie llegó a las 50 esencias el día anterior.</p>
             </div>
         </div>
     </div>
+
+    <!-- ==================== VISTA 5: HISTORIAL DE DESPACHOS (AUDIT LOG) ==================== -->
+    <div id="vista-historial" class="vista hidden">
+        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-1">Bitácora cronológica en tiempo real de viajes confirmados</p>
+        <p class="text-[11px] text-zinc-600 mb-4">Incluye viajes normales, excepciones de deuda autorizadas y traspasos de turno. Orden: más reciente primero.</p>
+        <div class="bg-zinc-950/70 border-t-4 border-zinc-600 p-3 sm:p-4 rounded-lg shadow-xl">
+            <div id="historial-despachos-lista" class="space-y-2 max-h-[620px] overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- ==================== VISTA 6: PANEL DE ANALÍTICA (solo lectura) ==================== -->
+    <div id="vista-analitica" class="vista hidden">
+        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-1">Panel consultivo — no admite edición, solo lectura de estado y rankings</p>
+        <p class="text-[11px] text-zinc-600 mb-4">Viajes Disponibles = floor(Esencia Hoy / 50) − Entregados Hoy · Viajes Totales Ejecutados = histórico completo de la bitácora de despachos.</p>
+
+        <!-- Estado de viajes por jugador -->
+        <div class="bg-zinc-950/70 border-t-4 border-[color:var(--oro)] p-3 sm:p-4 rounded-lg shadow-xl mb-6">
+            <h2 class="text-sm sm:text-base font-black tracking-wider text-[color:var(--oro)] uppercase mb-3">📊 Estado de Viajes por Jugador</h2>
+            <div class="overflow-x-auto max-h-[360px]">
+                <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
+                            <th class="py-2 pr-1">Jugador</th><th class="text-right">Viajes Totales Ejecutados</th><th class="text-right">Viajes Disponibles Hoy</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analitica-estado-tabla" class="divide-y divide-zinc-800/50"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Leaderboard multitemporal -->
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h2 class="text-sm sm:text-base font-black tracking-wider text-red-500 uppercase">🏆 Leaderboard Multitemporal (UTC+0)</h2>
+            <button id="btn-refrescar-analitica" class="bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-1.5 px-4 rounded transition-colors cursor-pointer text-[10px] uppercase tracking-wide">🔄 Recalcular semana / mes</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-zinc-950/70 border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
+                <h3 class="text-xs font-black tracking-wider text-red-500 uppercase mb-2">Top Diario</h3>
+                <p class="text-[9px] text-zinc-600 mb-2">Fecha en curso</p>
+                <div id="analitica-top-diario" class="space-y-1"></div>
+            </div>
+            <div class="bg-zinc-950/70 border-t-4 border-amber-600 p-3 sm:p-4 rounded-lg shadow-xl">
+                <h3 class="text-xs font-black tracking-wider text-amber-500 uppercase mb-2">Top Semanal</h3>
+                <p id="analitica-rango-semana" class="text-[9px] text-zinc-600 mb-2">Últimos 7 días</p>
+                <div id="analitica-top-semanal" class="space-y-1"></div>
+            </div>
+            <div class="bg-zinc-950/70 border-t-4 border-zinc-500 p-3 sm:p-4 rounded-lg shadow-xl">
+                <h3 class="text-xs font-black tracking-wider text-zinc-300 uppercase mb-2">Top Mensual</h3>
+                <p id="analitica-rango-mes" class="text-[9px] text-zinc-600 mb-2">Mes en curso</p>
+                <div id="analitica-top-mensual" class="space-y-1"></div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+    </div>
+    <!-- fin #vistas-track / #vistas-viewport -->
 
     <p class="text-center text-[11px] text-zinc-700 mt-8 tracking-wide">Mafia Exotic · OneState RP — Panel interno, no oficial.</p>
 </div>
@@ -362,48 +516,67 @@
 // para pruebas, o protégelas con Firebase Auth si varias personas van a escribir.
 // ============================================================
 const firebaseConfig = {
-    apiKey: "TU_API_KEY_AQUI",
-    authDomain: "TU_PROYECTO.firebaseapp.com",
-    databaseURL: "https://TU_PROYECTO-default-rtdb.firebaseio.com",
-    projectId: "TU_PROYECTO",
-    storageBucket: "TU_PROYECTO.appspot.com",
-    messagingSenderId: "TU_SENDER_ID",
-    appId: "TU_APP_ID"
+  apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
+  authDomain: "mafia-exotic-app.firebaseapp.com",
+  databaseURL: "https://mafia-exotic-app-default-rtdb.firebaseio.com",
+  projectId: "mafia-exotic-app",
+  storageBucket: "mafia-exotic-app.firebasestorage.app",
+  messagingSenderId: "782184090517",
+  appId: "1:782184090517:web:873176f8131a40a6f8c49c",
+  measurementId: "G-84EN2TJP19"
 };
 // ============================================================
 
 const FIREBASE_LISTO = firebaseConfig.apiKey !== "TU_API_KEY_AQUI";
-const CLAVE_ACCESO = 'exoticmafiatop1';
-const CLAVE_LOCAL_UNLOCK = 'onestate_unlocked_v1';
+const CLAVE_ACCESO = 'mafiaexotic1';
+const CLAVE_OPERADOR_SESSION = 'onestate_operator_session_v2';
+
+// ============================================================
+// AUDIO UI — reemplaza esta URL por tu asset de scratch (mp3/ogg corto, <300ms)
+// ============================================================
+const AUDIO_SCRATCH_URL = 'https://actions.google.com/sounds/v1/foley/vinyl_scratch.ogg';
 
 // ---------- REGLAS DE NEGOCIO (Logística) ----------
 const MAX_JUGADORES = 50;
 const ESENCIAS_POR_ROCA = 10;
-const META_MINIMA = 200;          // = 20 rocas
-const ESENCIAS_POR_VIAJE = 50;
+const META_MINIMA = 200;          // = 20 rocas (umbral de color "calificado")
+const ESENCIAS_POR_VIAJE = 50;    // umbral mínimo para aparecer en Despachos
 const rocasDe = (esencias) => Math.floor(esencias / ESENCIAS_POR_ROCA);
-const viajesDisponiblesDe = (esencias) => Math.floor(esencias / ESENCIAS_POR_VIAJE);
+// Viajes Disponibles = floor(Esencia Total / 50) — el descuento de "ya entregados"
+// se resta en el momento de pintar (ver filaViajes) para que el contador visible
+// siempre sea Disponibles - Entregados, nunca un valor guardado suelto.
+const viajesTotalesDe = (esencias) => Math.floor(esencias / ESENCIAS_POR_VIAJE);
 const cumpleMeta = (esencias) => esencias >= META_MINIMA;
+const habilitaDespacho = (esencias) => esencias >= ESENCIAS_POR_VIAJE;
 
 let db = null, fbFns = null;
 let refJugadoresHoy = null, refJugadoresAyer = null, refHistorico = null;
-let unsubHoy = null, unsubAyer = null, unsubHistorico = null;
+let unsubHoy = null, unsubAyer = null, unsubHistorico = null, unsubHistorialDespachos = null;
 
-let datosHoy = [], datosAyer = [], datosHistorico = [];
+let datosHoy = [], datosAyer = [], datosHistorico = [], datosHistorialDespachos = [];
 let ocrPendiente = [];
 let vistaActual = 'hoy';
+let operatorName = null;
 
-// ---------- FECHAS ----------
+// ---------- FECHAS (ESTRICTAMENTE UTC+0) ----------
+// Toda instancia de Date que representa un "día calendario" se construye o
+// serializa forzando el sufijo 'Z' (UTC), y toda lectura de hora usa los
+// métodos getUTC*. Esto evita saltos de día por huso horario del navegador.
 function formatoFecha(d) {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getUTCFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(d.getUTCDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
 }
 function fechaHoyStr() { return formatoFecha(new Date()); }
 function diaSiguienteStr(fechaStr) {
-    const d = new Date(fechaStr + 'T00:00:00');
-    d.setDate(d.getDate() + 1);
+    const d = new Date(fechaStr + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 1);
+    return formatoFecha(d);
+}
+function diaAnteriorAFechaStr(fechaStr) {
+    const d = new Date(fechaStr + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() - 1);
     return formatoFecha(d);
 }
 
@@ -411,10 +584,33 @@ function normalizarClave(nombre) {
     return nombre.replace(/[.#$\[\]\/\s]+/g, '_').trim();
 }
 
-// ---------- ACCESO CON CONTRASEÑA ----------
+// ---------- AUDITORÍA / TRAZABILIDAD ----------
+function firmaAuditoria() {
+    return { ultimo_cambio_por: operatorName || 'Desconocido', timestamp: Date.now() };
+}
+
+async function registrarDespachoAuditoria(entry) {
+    const payload = { ...entry, operador: operatorName || 'Desconocido', timestamp: Date.now() };
+    if (modoFirebaseActivo()) {
+        await fbFns.push(fb_ref('historial_despachos'), payload);
+    } else {
+        let historial = [];
+        try { historial = JSON.parse(localStorage.getItem('historial_despachos') || '[]'); } catch (e) { historial = []; }
+        historial.unshift(payload);
+        if (historial.length > 200) historial = historial.slice(0, 200);
+        localStorage.setItem('historial_despachos', JSON.stringify(historial));
+        datosHistorialDespachos = historial;
+        renderHistorialDespachos();
+    }
+}
+
+// ============================================================
+// ACCESO DUAL DE ALTA SEGURIDAD (Usuario + Contraseña maestra única)
+// ============================================================
 function iniciarApp() {
     document.getElementById('login-gate').classList.add('hidden');
     document.getElementById('app-content').classList.remove('hidden');
+    document.getElementById('operador-actual').textContent = operatorName || '—';
     document.getElementById('fecha-hoy').textContent = fechaHoyStr();
 
     if (FIREBASE_LISTO) {
@@ -428,19 +624,39 @@ function iniciarApp() {
 }
 
 function intentarLogin() {
-    const campo = document.getElementById('login-password');
-    if (campo.value === CLAVE_ACCESO) {
-        localStorage.setItem(CLAVE_LOCAL_UNLOCK, '1');
+    const campoUsuario = document.getElementById('login-usuario');
+    const campoPassword = document.getElementById('login-password');
+    const usuario = campoUsuario.value.trim();
+    const password = campoPassword.value;
+    const errorEl = document.getElementById('login-error');
+
+    if (usuario.length < 2 || password !== CLAVE_ACCESO) {
+        errorEl.classList.remove('hidden');
+        campoPassword.value = '';
+        (usuario.length < 2 ? campoUsuario : campoPassword).focus();
+        return;
+    }
+
+    operatorName = usuario;
+    sessionStorage.setItem(CLAVE_OPERADOR_SESSION, usuario);
+    errorEl.classList.add('hidden');
+    iniciarApp();
+}
+
+document.getElementById('login-btn').addEventListener('click', intentarLogin);
+document.getElementById('login-usuario').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('login-password').focus(); });
+document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') intentarLogin(); });
+
+// Sesión ya autenticada en esta pestaña (misma persona, mismo turno de navegador)
+(function comprobarSesionExistente() {
+    const guardado = sessionStorage.getItem(CLAVE_OPERADOR_SESSION);
+    if (guardado) {
+        operatorName = guardado;
         iniciarApp();
     } else {
-        document.getElementById('login-error').classList.remove('hidden');
-        campo.value = '';
-        campo.focus();
+        setTimeout(() => document.getElementById('login-usuario').focus(), 50);
     }
-}
-document.getElementById('login-btn').addEventListener('click', intentarLogin);
-document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') intentarLogin(); });
-if (localStorage.getItem(CLAVE_LOCAL_UNLOCK) === '1') iniciarApp();
+})();
 
 // ============================================================
 // FIREBASE: inicialización, rotación de día y suscripciones
@@ -464,7 +680,7 @@ async function inicializarFirebase() {
     }
 }
 
-// Cierra días viejos en cadena hasta llegar al día real de hoy, sumando
+// Cierra días viejos en cadena hasta llegar al día real de hoy (UTC), sumando
 // cada uno al histórico general antes de marcarlo "cerrada".
 async function rotarDiaSiCorrespondeFirebase() {
     const hoy = fechaHoyStr();
@@ -498,7 +714,7 @@ async function rotarDiaSiCorrespondeFirebase() {
 
     await fbFns.set(refControl, hoy);
     await fbFns.set(fb_ref(`registros_diarios/${hoy}/estado_caja`), 'abierta');
-    mostrarToast('🔄 Nuevo día iniciado: la caja anterior quedó cerrada', 'info');
+    mostrarToast('🔄 Nuevo día iniciado (UTC+0): la caja anterior quedó cerrada', 'info');
 }
 
 function fb_ref(path) { return fbFns.ref(db, path); }
@@ -507,6 +723,7 @@ function suscribirFirebase() {
     if (unsubHoy) unsubHoy();
     if (unsubAyer) unsubAyer();
     if (unsubHistorico) unsubHistorico();
+    if (unsubHistorialDespachos) unsubHistorialDespachos();
 
     const hoy = fechaHoyStr();
     const ayer = diaAnteriorAFechaStr(hoy);
@@ -521,18 +738,20 @@ function suscribirFirebase() {
     unsubHoy = fbFns.onValue(refJugadoresHoy, (snap) => { datosHoy = coleccionDesdeSnapshot(snap.val()); renderTodo(); });
     unsubAyer = fbFns.onValue(refJugadoresAyer, (snap) => { datosAyer = coleccionDesdeSnapshot(snap.val()); renderTodo(); });
     unsubHistorico = fbFns.onValue(refHistorico, (snap) => { datosHistorico = coleccionDesdeSnapshot(snap.val()); renderTodo(); });
-}
 
-function diaAnteriorAFechaStr(fechaStr) {
-    const d = new Date(fechaStr + 'T00:00:00');
-    d.setDate(d.getDate() - 1);
-    return formatoFecha(d);
+    const qHistorial = fbFns.query(fb_ref('historial_despachos'), fbFns.orderByChild('timestamp'), fbFns.limitToLast(200));
+    unsubHistorialDespachos = fbFns.onValue(qHistorial, (snap) => {
+        const val = snap.val() || {};
+        datosHistorialDespachos = Object.values(val).sort((a, b) => b.timestamp - a.timestamp);
+        renderHistorialDespachos();
+    });
 }
 
 function coleccionDesdeSnapshot(val) {
     if (!val) return [];
     return Object.entries(val).map(([clave, j]) => ({
-        clave, name: j.name, crystals: j.crystals || 0, viajesEntregados: j.viajesEntregados || 0
+        clave, name: j.name, crystals: j.crystals || 0, viajesEntregados: j.viajesEntregados || 0,
+        ultimo_cambio_por: j.ultimo_cambio_por || null, timestamp: j.timestamp || null, deudaActual: j.deudaActual || null
     }));
 }
 
@@ -547,6 +766,7 @@ async function revisarCambioDeDia() {
         const hoyGuardado = localStorage.getItem('control_dia_activo');
         if (hoyGuardado && hoyGuardado !== fechaHoyStr()) {
             rotarDiaSiCorrespondeLocal();
+            cargarLocal();
             renderTodo();
         }
     }
@@ -590,7 +810,7 @@ function rotarDiaSiCorrespondeLocal() {
 
     localStorage.setItem('historico_general', JSON.stringify(historico));
     localStorage.setItem('control_dia_activo', hoy);
-    mostrarToast('🔄 Nuevo día iniciado (modo local): la caja anterior quedó cerrada', 'info');
+    mostrarToast('🔄 Nuevo día iniciado (modo local, UTC+0): la caja anterior quedó cerrada', 'info');
 }
 
 function cargarLocal() {
@@ -605,6 +825,8 @@ function cargarLocal() {
         const hist = JSON.parse(localStorage.getItem('historico_general') || '{}');
         datosHistorico = Object.entries(hist).map(([clave, j]) => ({ clave, name: j.name, crystals: j.crystals || 0 }));
     } catch (e) { datosHistorico = []; }
+    try { datosHistorialDespachos = JSON.parse(localStorage.getItem('historial_despachos') || '[]'); } catch (e) { datosHistorialDespachos = []; }
+    renderHistorialDespachos();
 }
 
 function guardarLocalHoy() { localStorage.setItem(claveDiaLocal(fechaHoyStr()), JSON.stringify(datosHoy)); }
@@ -619,18 +841,19 @@ async function procesarJugadorHoy(nombreCrudo, cantidad) {
     const nombre = (nombreCrudo || '').trim();
     if (!nombre || isNaN(cantidad)) return 'invalido';
     const clave = normalizarClave(nombre);
+    const firma = firmaAuditoria();
 
     if (modoFirebaseActivo()) {
         const nodo = fbFns.child(refJugadoresHoy, clave);
         const snap = await fbFns.get(nodo);
         if (!snap.exists()) {
             if (datosHoy.length >= MAX_JUGADORES) return 'limite';
-            await fbFns.set(nodo, { name: nombre, crystals: cantidad, viajesEntregados: 0 });
+            await fbFns.set(nodo, { name: nombre, crystals: cantidad, viajesEntregados: 0, ...firma });
             return 'nuevo';
         }
         const actual = snap.val();
         if (cantidad > actual.crystals) {
-            await fbFns.set(nodo, { name: nombre, crystals: cantidad, viajesEntregados: actual.viajesEntregados || 0 });
+            await fbFns.set(nodo, { name: nombre, crystals: cantidad, viajesEntregados: actual.viajesEntregados || 0, ...firma });
             return 'actualizado';
         }
         return 'ignorado';
@@ -639,12 +862,14 @@ async function procesarJugadorHoy(nombreCrudo, cantidad) {
     const existente = datosHoy.find(p => p.clave === clave);
     if (!existente) {
         if (datosHoy.length >= MAX_JUGADORES) return 'limite';
-        datosHoy.push({ clave, name: nombre, crystals: cantidad, viajesEntregados: 0 });
+        datosHoy.push({ clave, name: nombre, crystals: cantidad, viajesEntregados: 0, ultimo_cambio_por: firma.ultimo_cambio_por, timestamp: firma.timestamp });
         guardarLocalHoy(); renderTodo();
         return 'nuevo';
     }
     if (cantidad > existente.crystals) {
         existente.crystals = cantidad;
+        existente.ultimo_cambio_por = firma.ultimo_cambio_por;
+        existente.timestamp = firma.timestamp;
         guardarLocalHoy(); renderTodo();
         return 'actualizado';
     }
@@ -669,58 +894,192 @@ async function reiniciarHoy() {
     guardarLocalHoy(); renderTodo();
 }
 
+// ---------- TRASPASO DE TURNO (transacción atómica del motor temporal) ----------
+function objetoDesdeColeccion(coleccion) {
+    const obj = {};
+    coleccion.forEach(p => {
+        obj[p.clave] = {
+            name: p.name, crystals: p.crystals, viajesEntregados: p.viajesEntregados || 0,
+            ultimo_cambio_por: p.ultimo_cambio_por || null, timestamp: p.timestamp || null,
+            deudaActual: p.deudaActual || null
+        };
+    });
+    return obj;
+}
+
+async function traspasoDeTurno() {
+    const hoy = fechaHoyStr();
+    const ayer = diaAnteriorAFechaStr(hoy);
+    const firma = firmaAuditoria();
+
+    if (modoFirebaseActivo()) {
+        // 1. Clonar el Día Actual hacia el Día Anterior
+        await fbFns.set(fb_ref(`registros_diarios/${ayer}/jugadores`), objetoDesdeColeccion(datosHoy));
+        // 2. Congelar el Día Anterior (solo lectura para esencias)
+        await fbFns.set(fb_ref(`registros_diarios/${ayer}/estado_caja`), 'cerrada');
+        await fbFns.set(fb_ref(`registros_diarios/${ayer}/traspaso_por`), firma);
+        // 3. Resetear el Día Actual a cero
+        await fbFns.remove(refJugadoresHoy);
+        await fbFns.set(fb_ref(`registros_diarios/${hoy}/estado_caja`), 'abierta');
+    } else {
+        datosAyer = datosHoy.map(p => ({ ...p }));
+        guardarLocalAyer();
+        datosHoy = [];
+        guardarLocalHoy();
+        renderTodo();
+    }
+
+    await registrarDespachoAuditoria({ jugador: '— Sistema —', dia: 'sistema', tipo: 'traspaso_turno', monto: null });
+    mostrarToast('🔁 Traspaso de turno ejecutado — Día Anterior actualizado y bloqueado', 'ok');
+
+    // 4. Redirigir la vista al Día Anterior
+    const botonAyer = document.querySelector('[data-tab="ayer"]');
+    if (botonAyer) botonAyer.click();
+}
+
 // Ajusta viajes entregados en Día Actual o Día Anterior (única edición
-// permitida en el día cerrado). Se limita entre 0 y los viajes disponibles.
+// permitida en el día cerrado). Se limita entre 0 y los viajes disponibles
+// (Viajes Totales según Esencia - Entregados ya no puede bajar de 0 ni
+// superar el total permitido).
 async function ajustarViajes(dia, clave, delta) {
     const coleccion = dia === 'hoy' ? datosHoy : datosAyer;
     const jugador = coleccion.find(p => p.clave === clave);
     if (!jugador) return;
 
-    const disponibles = viajesDisponiblesDe(jugador.crystals);
-    const nuevo = Math.min(disponibles, Math.max(0, jugador.viajesEntregados + delta));
+    const totales = viajesTotalesDe(jugador.crystals);
+    const nuevo = Math.min(totales, Math.max(0, (jugador.viajesEntregados || 0) + delta));
     if (nuevo === jugador.viajesEntregados) return;
+    const firma = firmaAuditoria();
 
     if (modoFirebaseActivo()) {
         const refBase = dia === 'hoy' ? refJugadoresHoy : refJugadoresAyer;
-        await fbFns.set(fbFns.child(refBase, clave), { name: jugador.name, crystals: jugador.crystals, viajesEntregados: nuevo });
+        await fbFns.update(fbFns.child(refBase, clave), { viajesEntregados: nuevo, ...firma });
     } else {
         jugador.viajesEntregados = nuevo;
+        jugador.ultimo_cambio_por = firma.ultimo_cambio_por;
+        jugador.timestamp = firma.timestamp;
         dia === 'hoy' ? guardarLocalHoy() : guardarLocalAyer();
         renderTodo();
     }
+
+    if (delta > 0) {
+        await registrarDespachoAuditoria({ jugador: jugador.name, dia, tipo: 'normal', monto: null });
+    }
 }
 
-// ---------- SEÑAL EN VIVO Y RELOJ ----------
+// ---------- EXCEPCIÓN DE DEUDA: viaje manual para quien no llega a la meta ----------
+async function autorizarViajeManual(dia, clave) {
+    const coleccion = dia === 'hoy' ? datosHoy : datosAyer;
+    const jugador = coleccion.find(p => p.clave === clave);
+    if (!jugador) return;
+    if (cumpleMeta(jugador.crystals)) {
+        mostrarToast('Este jugador ya cumple la meta, usa el contador normal de viajes', 'info');
+        return;
+    }
+
+    const deuda = META_MINIMA - jugador.crystals;
+    const confirmado = confirm(
+        `⚠️ AUTORIZACIÓN DE EXCEPCIÓN\n\n` +
+        `Jugador: ${jugador.name}\n` +
+        `Esencias actuales: ${jugador.crystals}\n` +
+        `Deuda generada: ${deuda} esencias\n\n` +
+        `¿Autorizar este viaje manual bajo la responsabilidad de "${operatorName}"?`
+    );
+    if (!confirmado) return;
+
+    const nuevoConteo = (jugador.viajesEntregados || 0) + 1;
+    const firma = firmaAuditoria();
+    const payload = { viajesEntregados: nuevoConteo, deudaActual: deuda, ...firma };
+
+    if (modoFirebaseActivo()) {
+        const refBase = dia === 'hoy' ? refJugadoresHoy : refJugadoresAyer;
+        await fbFns.update(fbFns.child(refBase, clave), payload);
+    } else {
+        jugador.viajesEntregados = nuevoConteo;
+        jugador.deudaActual = deuda;
+        jugador.ultimo_cambio_por = firma.ultimo_cambio_por;
+        jugador.timestamp = firma.timestamp;
+        dia === 'hoy' ? guardarLocalHoy() : guardarLocalAyer();
+        renderTodo();
+    }
+
+    await registrarDespachoAuditoria({ jugador: jugador.name, dia, tipo: 'manual_deuda', monto: deuda });
+    mostrarToast(`⚠️ Viaje manual autorizado — deuda inyectada: ${deuda} esencias`, 'err');
+}
+
+// ---------- MUTACIÓN HISTÓRICA: renombrar sin perder el nodo ----------
+async function renombrarHistorico(clave, nuevoNombre) {
+    const firma = firmaAuditoria();
+    if (modoFirebaseActivo()) {
+        await fbFns.update(fb_ref(`historico_general/${clave}`), { name: nuevoNombre, ultimo_cambio_por: firma.ultimo_cambio_por, timestamp: firma.timestamp });
+    } else {
+        let historico = {};
+        try { historico = JSON.parse(localStorage.getItem('historico_general') || '{}'); } catch (e) { historico = {}; }
+        if (historico[clave]) {
+            historico[clave].name = nuevoNombre;
+            historico[clave].ultimo_cambio_por = firma.ultimo_cambio_por;
+            historico[clave].timestamp = firma.timestamp;
+            localStorage.setItem('historico_general', JSON.stringify(historico));
+        }
+        cargarLocal(); renderTodo();
+    }
+    mostrarToast(`✎ Nickname actualizado a "${nuevoNombre}" (historial conservado)`, 'ok');
+}
+
+// ---------- SEÑAL EN VIVO Y RELOJ (UTC+0 estricto) ----------
 function marcarSeñal(activa, texto) {
     document.getElementById('punto-señal').classList.toggle('offline', !activa);
     document.getElementById('texto-señal').textContent = texto;
 }
 function actualizarReloj() {
     const ahora = new Date();
-    const hh = String(ahora.getHours()).padStart(2, '0');
-    const mm = String(ahora.getMinutes()).padStart(2, '0');
-    const ss = String(ahora.getSeconds()).padStart(2, '0');
-    const dd = String(ahora.getDate()).padStart(2, '0');
-    const mo = String(ahora.getMonth() + 1).padStart(2, '0');
-    const yy = ahora.getFullYear();
-    document.getElementById('reloj').textContent = `${hh}:${mm}:${ss} - ${dd}/${mo}/${yy}`;
+    const hh = String(ahora.getUTCHours()).padStart(2, '0');
+    const mm = String(ahora.getUTCMinutes()).padStart(2, '0');
+    const ss = String(ahora.getUTCSeconds()).padStart(2, '0');
+    const dd = String(ahora.getUTCDate()).padStart(2, '0');
+    const mo = String(ahora.getUTCMonth() + 1).padStart(2, '0');
+    const yy = ahora.getUTCFullYear();
+    document.getElementById('reloj').textContent = `${hh}:${mm}:${ss} UTC · ${dd}/${mo}/${yy}`;
 }
 setInterval(actualizarReloj, 1000);
 actualizarReloj();
 
-// ---------- PESTAÑAS ----------
+// ---------- PESTAÑAS (ROUTER SPA — track horizontal con translate3d, 0 reflow) ----------
+const ORDEN_PESTAÑAS = ['hoy', 'ayer', 'historico', 'despachos', 'historial', 'analitica'];
+const pistaVistas = document.getElementById('vistas-track');
+
+// Todas las subpáginas quedan visibles en el DOM (sin display:none) desde el
+// arranque: solo la posición del track decide qué se ve. Se limpia la clase
+// 'hidden' heredada del markup para que el layout se calcule una sola vez.
+document.querySelectorAll('#vistas-track > .vista').forEach(v => v.classList.remove('hidden'));
+
+function moverTrackA(indice) {
+    // translate3d fuerza la capa en su propio compositor layer (GPU); el
+    // porcentaje es relativo al ancho del propio track (600%), por lo que
+    // cada paso de índice desplaza exactamente un viewport completo.
+    pistaVistas.style.transform = `translate3d(-${indice * (100 / ORDEN_PESTAÑAS.length)}%, 0, 0)`;
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         vistaActual = btn.dataset.tab;
-        document.querySelectorAll('.vista').forEach(v => v.classList.add('hidden'));
-        document.getElementById('vista-' + vistaActual).classList.remove('hidden');
+        const indice = ORDEN_PESTAÑAS.indexOf(vistaActual);
+        if (indice === -1) return;
+
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-activo'));
         btn.classList.add('tab-activo');
+        moverTrackA(indice);
+
+        if (vistaActual === 'analitica') actualizarAnalitica();
     });
 });
 
 // ============================================================
-// RENDER
+// RENDER — Motor "atómico": todo el HTML de cada tabla se arma en un
+// arreglo de strings en memoria y se inyecta con UNA sola asignación a
+// innerHTML por sección. Nunca se usa += dentro de un bucle sobre el DOM
+// real (eso fuerza un reflow/reparse en cada iteración y es la causa
+// principal del lag reportado).
 // ============================================================
 function escapeHTML(str) {
     const div = document.createElement('div');
@@ -733,19 +1092,163 @@ function renderTodo() {
     renderDia('ayer', datosAyer, 'ayer-top8', 'ayer-otros', false);
     renderHistorico();
     renderDespachos();
+    renderAnaliticaEstado();
+    renderLeaderboardBloque('analitica-top-diario', mapaDesdeColeccion(datosHoy));
     document.getElementById('contador-hoy').textContent = `${datosHoy.length}/${MAX_JUGADORES}`;
 }
 
+// ============================================================
+// PANEL DE ANALÍTICA (6ta subpágina) — estrictamente consultivo, no muta
+// ningún dato. La parte "Estado" y "Top Diario" es en vivo (se recalcula en
+// cada renderTodo, sin fetch extra: usa lo que ya está en memoria). Los
+// leaderboards Semanal/Mensual sí requieren leer días pasados, por eso se
+// calculan bajo demanda (al abrir la pestaña o pulsar "Recalcular").
+// ============================================================
+function calcularTotalesEjecutadosPorJugador() {
+    const mapa = new Map();
+    for (const entry of datosHistorialDespachos) {
+        if (entry.tipo !== 'normal' && entry.tipo !== 'manual_deuda') continue;
+        const nombre = entry.jugador || '—';
+        mapa.set(nombre, (mapa.get(nombre) || 0) + 1);
+    }
+    return mapa;
+}
+
+function renderAnaliticaEstado() {
+    const tbody = document.getElementById('analitica-estado-tabla');
+    if (!tbody) return;
+    const ejecutados = calcularTotalesEjecutadosPorJugador();
+    const nombres = new Map();
+    [...datosHoy, ...datosAyer].forEach(j => { if (!nombres.has(j.name)) nombres.set(j.name, j); });
+
+    const filas = Array.from(nombres.values())
+        .sort((a, b) => b.crystals - a.crystals)
+        .map(j => {
+            const disponibles = Math.max(0, viajesTotalesDe(j.crystals) - (j.viajesEntregados || 0));
+            const totalEjec = ejecutados.get(j.name) || 0;
+            return `
+                <tr class="hover:bg-zinc-800/30 transition-colors">
+                    <td class="py-2 pr-1 font-bold">${escapeHTML(j.name)}</td>
+                    <td class="text-right text-zinc-300">${totalEjec}</td>
+                    <td class="text-right text-zinc-300">${disponibles}</td>
+                </tr>`;
+        });
+
+    tbody.innerHTML = filas.length
+        ? filas.join('')
+        : `<tr><td colspan="3" class="py-6 text-center text-zinc-700 text-xs">Sin actividad reciente.</td></tr>`;
+}
+
+function mapaDesdeColeccion(coleccion) {
+    const mapa = new Map();
+    coleccion.forEach(j => mapa.set(j.name, (mapa.get(j.name) || 0) + (j.crystals || 0)));
+    return mapa;
+}
+
+function renderLeaderboardBloque(contenedorId, mapaEsencias, top = 8) {
+    const cont = document.getElementById(contenedorId);
+    if (!cont) return;
+    const ordenado = Array.from(mapaEsencias.entries()).sort((a, b) => b[1] - a[1]).slice(0, top);
+    cont.innerHTML = ordenado.length
+        ? ordenado.map(([nombre, esencia], i) => `
+            <div class="flex items-center justify-between text-[11px] gap-2">
+                <span class="text-zinc-400 truncate">#${i + 1} ${escapeHTML(nombre)}</span>
+                <span class="font-bold text-zinc-200 mono">${esencia.toLocaleString()}</span>
+            </div>`).join('')
+        : `<p class="text-[10px] text-zinc-700">Sin datos en este rango.</p>`;
+}
+
+// Suma esencias por jugador en un rango cerrado [inicio, fin] (UTC+0). Lee
+// los nodos diarios que YA existen (registros_diarios/{fecha} en Firebase, o
+// su equivalente en localStorage) — rotarDiaSiCorresponde() nunca los borra,
+// solo los marca "cerrada" y los suma al histórico, así que siguen
+// disponibles para reconstruir ventanas de 7/30 días sin tocar el esquema.
+async function sumarRangoFechas(fechaInicioStr, fechaFinStr) {
+    const fechas = [];
+    let cursor = fechaInicioStr;
+    while (cursor <= fechaFinStr) { fechas.push(cursor); cursor = diaSiguienteStr(cursor); }
+
+    const mapa = new Map();
+    if (modoFirebaseActivo()) {
+        const snaps = await Promise.all(fechas.map(f => fbFns.get(fb_ref(`registros_diarios/${f}/jugadores`))));
+        snaps.forEach(snap => {
+            if (!snap.exists()) return;
+            Object.values(snap.val()).forEach(j => mapa.set(j.name, (mapa.get(j.name) || 0) + (j.crystals || 0)));
+        });
+    } else {
+        fechas.forEach(f => {
+            let jugadores = [];
+            try { jugadores = JSON.parse(localStorage.getItem(claveDiaLocal(f)) || '[]'); } catch (e) { jugadores = []; }
+            jugadores.forEach(j => mapa.set(j.name, (mapa.get(j.name) || 0) + (j.crystals || 0)));
+        });
+    }
+    return mapa;
+}
+
+let analiticaCargando = false;
+async function actualizarAnalitica() {
+    renderAnaliticaEstado();
+    renderLeaderboardBloque('analitica-top-diario', mapaDesdeColeccion(datosHoy));
+
+    if (analiticaCargando) return;
+    analiticaCargando = true;
+    const btn = document.getElementById('btn-refrescar-analitica');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Calculando...'; }
+
+    try {
+        const hoy = fechaHoyStr();
+
+        let inicioSemana = hoy;
+        for (let i = 0; i < 6; i++) inicioSemana = diaAnteriorAFechaStr(inicioSemana);
+        const mapaSemana = await sumarRangoFechas(inicioSemana, hoy);
+        renderLeaderboardBloque('analitica-top-semanal', mapaSemana);
+        document.getElementById('analitica-rango-semana').textContent = `${inicioSemana} → ${hoy}`;
+
+        const inicioMes = hoy.slice(0, 7) + '-01';
+        const mapaMes = await sumarRangoFechas(inicioMes, hoy);
+        renderLeaderboardBloque('analitica-top-mensual', mapaMes);
+        document.getElementById('analitica-rango-mes').textContent = `${inicioMes} → ${hoy}`;
+    } catch (err) {
+        console.error('Error calculando leaderboard multitemporal:', err);
+        mostrarToast('No se pudo calcular el ranking semanal/mensual', 'err');
+    } finally {
+        analiticaCargando = false;
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 Recalcular semana / mes'; }
+    }
+}
+
+document.getElementById('btn-refrescar-analitica').addEventListener('click', actualizarAnalitica);
+
+function subrayaAuditoria(j) {
+    let out = '';
+    if (j.ultimo_cambio_por) out += `<span class="block text-zinc-700 text-[9px] font-normal normal-case">✎ ${escapeHTML(j.ultimo_cambio_por)}</span>`;
+    if (j.deudaActual) out += `<span class="block text-red-700 text-[9px] font-bold normal-case">Deuda: ${j.deudaActual}</span>`;
+    return out;
+}
+
+// Clase de color del NOMBRE según jerarquía visual:
+// MVP absoluto (posición #1 con esencia > 0) > Calificado (>=200) > No calificado
+function claseNombre(esMvp, esencias) {
+    if (esMvp && esencias > 0) return 'txt-mvp';
+    return cumpleMeta(esencias) ? 'txt-calificado' : 'txt-no-calificado';
+}
+
 function filaViajes(dia, jugador) {
-    const disponibles = viajesDisponiblesDe(jugador.crystals);
-    if (disponibles === 0) {
-        return `<span class="text-zinc-700 text-[10px]">—</span>`;
+    const totales = viajesTotalesDe(jugador.crystals);
+    const entregados = jugador.viajesEntregados || 0;
+    const disponiblesRestantes = Math.max(0, totales - entregados);
+    if (totales === 0) {
+        return `
+            <div class="flex flex-col items-end gap-0.5">
+                <span class="text-zinc-700 text-[10px]">—</span>
+                <button class="text-[8px] sm:text-[9px] text-amber-600 hover:text-amber-400 uppercase tracking-wide cursor-pointer btn-viaje-manual whitespace-nowrap" data-dia="${dia}" data-clave="${jugador.clave}">⚠️ Autorizar (deudor)</button>
+            </div>`;
     }
     return `
-        <div class="flex items-center gap-1 justify-end">
-            <button class="stepper-btn btn-viaje" data-dia="${dia}" data-clave="${jugador.clave}" data-delta="-1" ${jugador.viajesEntregados <= 0 ? 'disabled' : ''}>−</button>
-            <span class="mono text-[10px] sm:text-xs w-10 text-center">${jugador.viajesEntregados}/${disponibles}</span>
-            <button class="stepper-btn btn-viaje" data-dia="${dia}" data-clave="${jugador.clave}" data-delta="1" ${jugador.viajesEntregados >= disponibles ? 'disabled' : ''}>+</button>
+        <div class="flex items-center gap-1 justify-end" title="Disponibles restantes: ${disponiblesRestantes}">
+            <button class="stepper-btn btn-viaje" data-dia="${dia}" data-clave="${jugador.clave}" data-delta="-1" ${entregados <= 0 ? 'disabled' : ''}>−</button>
+            <span class="mono text-[10px] sm:text-xs w-12 text-center viajes-num">${entregados}/${totales}</span>
+            <button class="stepper-btn btn-viaje" data-dia="${dia}" data-clave="${jugador.clave}" data-delta="1" ${entregados >= totales ? 'disabled' : ''}>+</button>
         </div>`;
 }
 
@@ -753,40 +1256,46 @@ function renderDia(dia, datos, idTop, idOtros, permiteBorrar) {
     const ordenado = [...datos].sort((a, b) => b.crystals - a.crystals);
     const top = document.getElementById(idTop);
     const otros = document.getElementById(idOtros);
-    top.innerHTML = '';
-    otros.innerHTML = '';
+
+    const filasTop = [];
+    const filasOtros = [];
 
     for (let i = 0; i < 8; i++) {
         if (!ordenado[i]) break;
         const j = ordenado[i];
-        const esOro = i === 0;
+        const esMvp = i === 0;
         const rocas = rocasDe(j.crystals);
         const calif = cumpleMeta(j.crystals);
-        top.innerHTML += `
-            <tr class="hover:bg-zinc-800/30 transition-colors ${esOro ? 'fila-oro' : ''}">
-                <td class="py-3 pr-1 font-bold ${esOro ? 'text-[color:var(--oro)]' : 'text-red-500'}">#${i + 1}</td>
-                <td class="font-bold">${esOro ? '👑 ' : ''}${escapeHTML(j.name)}</td>
+        const clsNombre = claseNombre(esMvp, j.crystals);
+        filasTop.push(`
+            <tr class="hover:bg-zinc-800/30 transition-colors ${esMvp && j.crystals > 0 ? 'fila-mvp' : (esMvp ? 'fila-oro' : '')}">
+                <td class="py-3 pr-1 font-bold ${esMvp ? 'text-[color:var(--oro-mvp)]' : 'text-red-500'}">#${i + 1}</td>
+                <td class="font-bold ${clsNombre}">${esMvp && j.crystals > 0 ? '👑 ' : ''}${escapeHTML(j.name)}${subrayaAuditoria(j)}</td>
                 <td class="text-right whitespace-nowrap">
                     <span class="font-black text-zinc-300">${j.crystals.toLocaleString()}</span>
                     <span class="block text-[9px] ${calif ? 'text-zinc-500' : 'text-red-800'}">${rocas} rocas${calif ? '' : ' · no califica'}</span>
                 </td>
                 <td class="text-right">${filaViajes(dia, j)}</td>
                 <td class="text-right">${permiteBorrar ? `<button data-clave="${j.clave}" class="btn-borrar text-zinc-600 hover:text-red-500 text-xs cursor-pointer" title="Borrar">✖</button>` : ''}</td>
-            </tr>`;
+            </tr>`);
     }
 
-    for (let i = 8; i < datos.length; i++) {
-        if (!ordenado[i]) break;
+    for (let i = 8; i < ordenado.length; i++) {
         const j = ordenado[i];
-        otros.innerHTML += `
-            <tr class="hover:bg-zinc-800/30 transition-colors text-zinc-400 fila-compacta">
+        const clsNombre = claseNombre(false, j.crystals);
+        filasOtros.push(`
+            <tr class="hover:bg-zinc-800/30 transition-colors fila-compacta">
                 <td class="py-1 pr-1 font-bold text-zinc-600">#${i + 1}</td>
-                <td>${escapeHTML(j.name)}</td>
+                <td class="${clsNombre}">${escapeHTML(j.name)}${subrayaAuditoria(j)}</td>
                 <td class="text-right font-bold text-zinc-500">${j.crystals.toLocaleString()}</td>
                 <td class="text-right">${filaViajes(dia, j)}</td>
                 <td class="text-right">${permiteBorrar ? `<button data-clave="${j.clave}" class="btn-borrar text-zinc-700 hover:text-red-500 text-[10px] cursor-pointer" title="Borrar">✖</button>` : ''}</td>
-            </tr>`;
+            </tr>`);
     }
+
+    // Inyección atómica: una sola escritura al DOM por tabla, no una por fila.
+    top.innerHTML = filasTop.join('');
+    otros.innerHTML = filasOtros.join('');
 
     if (permiteBorrar) {
         [...top.querySelectorAll('.btn-borrar'), ...otros.querySelectorAll('.btn-borrar')].forEach(btn => {
@@ -799,61 +1308,104 @@ function renderDia(dia, datos, idTop, idOtros, permiteBorrar) {
         });
     }
 
+    // Botones +/- de viajes: SIEMPRE piden confirm() antes de descontar/sumar,
+    // y disparan un flash visual (transform+color, acelerado por GPU) sobre
+    // el número afectado, dando feedback instantáneo sin esperar al re-render.
     [...top.querySelectorAll('.btn-viaje'), ...otros.querySelectorAll('.btn-viaje')].forEach(btn => {
         btn.addEventListener('click', () => {
-            ajustarViajes(btn.getAttribute('data-dia'), btn.getAttribute('data-clave'), parseInt(btn.getAttribute('data-delta'), 10));
+            const d = btn.getAttribute('data-dia');
+            const clave = btn.getAttribute('data-clave');
+            const delta = parseInt(btn.getAttribute('data-delta'), 10);
+            const accion = delta > 0 ? 'REGISTRAR un viaje como ENTREGADO' : 'REVERTIR el último viaje entregado';
+            if (!confirm(`¿Confirmas ${accion} para este jugador?`)) return;
+
+            const numEl = btn.parentElement.querySelector('.viajes-num');
+            if (numEl) {
+                numEl.classList.remove('flash-num');
+                void numEl.offsetWidth; // fuerza reflow puntual para reiniciar la animación
+                numEl.classList.add('flash-num');
+            }
+            ajustarViajes(d, clave, delta);
+        });
+    });
+
+    [...top.querySelectorAll('.btn-viaje-manual'), ...otros.querySelectorAll('.btn-viaje-manual')].forEach(btn => {
+        btn.addEventListener('click', () => {
+            autorizarViajeManual(btn.getAttribute('data-dia'), btn.getAttribute('data-clave'));
         });
     });
 }
 
 function renderHistorico() {
     const cuerpo = document.getElementById('historico-tabla');
-    cuerpo.innerHTML = '';
     const ordenado = [...datosHistorico].sort((a, b) => b.crystals - a.crystals).slice(0, 50);
+    const filas = [];
+
     ordenado.forEach((j, i) => {
-        cuerpo.innerHTML += `
+        filas.push(`
             <tr class="hover:bg-zinc-800/30 transition-colors ${i === 0 ? 'fila-oro' : ''}">
                 <td class="py-2 pr-1 font-bold ${i === 0 ? 'text-[color:var(--oro)]' : 'text-zinc-500'}">#${i + 1}</td>
-                <td class="font-bold">${i === 0 ? '👑 ' : ''}${escapeHTML(j.name)}</td>
+                <td class="font-bold">${i === 0 ? '👑 ' : ''}${escapeHTML(j.name)} <button class="btn-renombrar text-zinc-600 hover:text-amber-400 text-[10px] ml-1 cursor-pointer" data-clave="${j.clave}" title="Renombrar">✎</button>${subrayaAuditoria(j)}</td>
                 <td class="text-right font-black text-zinc-300">${j.crystals.toLocaleString()}</td>
                 <td class="text-right text-zinc-500">${rocasDe(j.crystals).toLocaleString()}</td>
-            </tr>`;
+            </tr>`);
     });
-    if (ordenado.length === 0) {
-        cuerpo.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-zinc-700 text-xs">Aún no hay historial acumulado.</td></tr>`;
-    }
+
+    cuerpo.innerHTML = filas.length
+        ? filas.join('')
+        : `<tr><td colspan="4" class="py-6 text-center text-zinc-700 text-xs">Aún no hay historial acumulado.</td></tr>`;
+
+    cuerpo.querySelectorAll('.btn-renombrar').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const clave = btn.getAttribute('data-clave');
+            const jugador = datosHistorico.find(p => p.clave === clave);
+            if (!jugador) return;
+            const nuevo = prompt(`Nuevo nickname para "${jugador.name}" (se conserva su historial):`, jugador.name);
+            if (!nuevo || !nuevo.trim() || nuevo.trim() === jugador.name) return;
+            renombrarHistorico(clave, nuevo.trim());
+        });
+    });
 }
 
-function pillsDeViajes(disponibles, entregados) {
-    if (disponibles === 0) return '<span class="text-zinc-700">—</span>';
-    let out = '';
-    for (let i = 0; i < disponibles; i++) out += i < entregados ? '🟩' : '⬜';
-    return out;
+// Pips visuales de despacho: cuadrados blancos translúcidos = pendiente,
+// verdes con glow = entregado. Sustituye a los emoji para un acabado más
+// premium y consistente entre plataformas.
+function pipsDeViajes(totales, entregados) {
+    if (totales === 0) return '<span class="text-zinc-700 text-[10px]">— sin viajes —</span>';
+    const spans = [];
+    for (let i = 0; i < totales; i++) {
+        spans.push(`<span class="pip ${i < entregados ? 'pip-ok' : 'pip-pending'}"></span>`);
+    }
+    return `<div class="flex gap-1 flex-wrap justify-end">${spans.join('')}</div>`;
 }
 
 function renderDespachos() {
     const contHoy = document.getElementById('despachos-hoy');
     const contAyer = document.getElementById('despachos-ayer');
-    contHoy.innerHTML = '';
-    contAyer.innerHTML = '';
 
-    const califHoy = [...datosHoy].filter(j => cumpleMeta(j.crystals)).sort((a, b) => b.crystals - a.crystals);
-    const califAyer = [...datosAyer].filter(j => cumpleMeta(j.crystals)).sort((a, b) => b.crystals - a.crystals);
+    // Habilita a TODO jugador con >= 50 esencias (1 viaje o más), no solo a
+    // quienes cumplen la meta de 200. El color del nombre sigue indicando
+    // si además cumple la meta mínima.
+    const califHoy = [...datosHoy].filter(j => habilitaDespacho(j.crystals)).sort((a, b) => b.crystals - a.crystals);
+    const califAyer = [...datosAyer].filter(j => habilitaDespacho(j.crystals)).sort((a, b) => b.crystals - a.crystals);
 
     document.getElementById('despachos-hoy-vacio').classList.toggle('hidden', califHoy.length > 0);
     document.getElementById('despachos-ayer-vacio').classList.toggle('hidden', califAyer.length > 0);
 
     const tarjeta = (j) => {
-        const disponibles = viajesDisponiblesDe(j.crystals);
+        const totales = viajesTotalesDe(j.crystals);
+        const entregados = j.viajesEntregados || 0;
+        const clsNombre = claseNombre(false, j.crystals);
         return `
             <div class="bg-zinc-900/60 border border-zinc-800 rounded-lg px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                    <p class="font-bold text-sm text-zinc-200">${escapeHTML(j.name)}</p>
+                    <p class="font-bold text-sm ${clsNombre}">${escapeHTML(j.name)}</p>
                     <p class="text-[10px] text-zinc-500">${j.crystals.toLocaleString()} esencia · ${rocasDe(j.crystals)} rocas</p>
+                    ${j.ultimo_cambio_por ? `<p class="text-zinc-700 text-[9px]">✎ ${escapeHTML(j.ultimo_cambio_por)}</p>` : ''}
                 </div>
                 <div class="text-right">
-                    <p class="tracking-wider text-sm">${pillsDeViajes(disponibles, j.viajesEntregados)}</p>
-                    <p class="text-[9px] text-zinc-600 mono">${j.viajesEntregados}/${disponibles} viajes</p>
+                    ${pipsDeViajes(totales, entregados)}
+                    <p class="text-[9px] text-zinc-600 mono mt-1">${entregados}/${totales} viajes</p>
                 </div>
             </div>`;
     };
@@ -861,6 +1413,93 @@ function renderDespachos() {
     contHoy.innerHTML = califHoy.map(tarjeta).join('');
     contAyer.innerHTML = califAyer.map(tarjeta).join('');
 }
+
+function renderHistorialDespachos() {
+    const cont = document.getElementById('historial-despachos-lista');
+    if (!cont) return;
+
+    if (datosHistorialDespachos.length === 0) {
+        cont.innerHTML = `<p class="text-xs text-zinc-600 text-center py-6">Aún no hay viajes registrados en el historial.</p>`;
+        return;
+    }
+
+    const filas = datosHistorialDespachos.map(entry => {
+        const fecha = new Date(entry.timestamp);
+        const fechaStr = isNaN(fecha.getTime()) ? '--' : fecha.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+        let badge;
+        if (entry.tipo === 'manual_deuda') {
+            badge = `<span class="text-[9px] bg-red-900 text-red-200 px-2 py-0.5 rounded uppercase font-black whitespace-nowrap">Deuda ${entry.monto}</span>`;
+        } else if (entry.tipo === 'traspaso_turno') {
+            badge = `<span class="text-[9px] bg-amber-800 text-amber-200 px-2 py-0.5 rounded uppercase font-black whitespace-nowrap">Traspaso de Turno</span>`;
+        } else {
+            badge = `<span class="text-[9px] bg-green-900 text-green-200 px-2 py-0.5 rounded uppercase font-black whitespace-nowrap">Viaje Normal</span>`;
+        }
+        return `
+            <div class="flex items-center justify-between gap-3 bg-zinc-950/60 border border-zinc-800 rounded px-3 py-2 flex-wrap">
+                <div class="min-w-0">
+                    <p class="text-xs sm:text-sm font-bold text-zinc-200 truncate">${escapeHTML(entry.jugador || '—')}</p>
+                    <p class="text-[10px] text-zinc-600 mono">${fechaStr} · día: ${escapeHTML(entry.dia || '—')}</p>
+                </div>
+                <div class="text-right shrink-0">
+                    ${badge}
+                    <p class="text-[9px] text-zinc-700 mt-1">✎ ${escapeHTML(entry.operador || '—')}</p>
+                </div>
+            </div>`;
+    });
+
+    cont.innerHTML = filas.join('');
+}
+
+// ============================================================
+// AUDIO INMERSIVO — Web Audio API (decodificación única, disparo de baja
+// latencia). No usa <audio> por elemento: un único AudioBuffer se reutiliza
+// con un nodo BufferSource nuevo por reproducción, lo que permite scratches
+// superpuestos sin recorte ni delay, y consumo de CPU nulo en reposo.
+// ============================================================
+let audioCtx = null;
+let scratchBuffer = null;
+let audioListo = false;
+
+async function precargarAudioUI() {
+    try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        audioCtx = new Ctx();
+        const resp = await fetch(AUDIO_SCRATCH_URL);
+        const arrayBuffer = await resp.arrayBuffer();
+        scratchBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        audioListo = true;
+    } catch (err) {
+        console.warn('Audio UI no disponible (se continúa sin sonido):', err);
+        audioListo = false;
+    }
+}
+
+function reproducirScratch() {
+    if (!audioListo || !scratchBuffer || !audioCtx) return;
+    // Los navegadores suspenden el AudioContext hasta el primer gesto del
+    // usuario; como este disparo YA es un gesto (click/Enter), se reanuda aquí.
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const source = audioCtx.createBufferSource();
+    source.buffer = scratchBuffer;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.35;
+    source.connect(gain).connect(audioCtx.destination);
+    source.start(0);
+}
+
+// Precarga perezosa: arranca en el primer gesto real del usuario (el click
+// para iniciar sesión), evitando el aviso de "autoplay" del navegador.
+document.getElementById('login-btn').addEventListener('click', () => {
+    if (!audioCtx) precargarAudioUI();
+}, { once: true });
+
+// Disparo del scratch en la navegación por pestañas: cubre tanto el click
+// de ratón como la activación por teclado (Enter/Space sobre un <button>
+// nativo despacha 'click' igualmente, así que un solo listener basta).
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', reproducirScratch);
+});
 
 // ---------- TOASTS ----------
 let toastTimer = null;
@@ -878,7 +1517,7 @@ document.querySelectorAll('.btn-exportar').forEach(btn => {
         const contenedorId = btn.getAttribute('data-exportar');
         const nombreArchivo = btn.getAttribute('data-nombre') || 'Reporte_Mafia_Exotic';
         const node = document.getElementById(contenedorId);
-        const botonesOcultar = node.querySelectorAll('.btn-borrar, .btn-viaje');
+        const botonesOcultar = node.querySelectorAll('.btn-borrar, .btn-viaje, .btn-viaje-manual, .btn-renombrar');
         botonesOcultar.forEach(b => b.style.visibility = 'hidden');
 
         html2canvas(node, { backgroundColor: '#050506' }).then(canvas => {
@@ -893,6 +1532,12 @@ document.querySelectorAll('.btn-exportar').forEach(btn => {
             mostrarToast('No se pudo generar el JPG, revisa la consola', 'err');
         });
     });
+});
+
+// ---------- TRASPASO DE TURNO (botón) ----------
+document.getElementById('btn-traspaso').addEventListener('click', async () => {
+    if (!confirm('¿Ejecutar Traspaso de Turno?\n\nEsto archivará el Día Actual como Día Anterior (quedará bloqueado para esencias) y reiniciará el Día Actual a cero. Esta acción no se puede deshacer.')) return;
+    await traspasoDeTurno();
 });
 
 // ---------- REINICIAR DÍA ACTUAL ----------
@@ -919,13 +1564,13 @@ document.getElementById('form-manual').addEventListener('submit', async (e) => {
         limite: `🚫 Límite de ${MAX_JUGADORES} jugadores alcanzado, no se puede agregar más`,
         invalido: 'Datos inválidos'
     };
-    mostrarToast(mensajes[resultado], resultado === 'ok' || resultado === 'nuevo' || resultado === 'actualizado' ? 'ok' : (resultado === 'invalido' || resultado === 'limite' ? 'err' : 'info'));
+    mostrarToast(mensajes[resultado], resultado === 'nuevo' || resultado === 'actualizado' ? 'ok' : (resultado === 'invalido' || resultado === 'limite' ? 'err' : 'info'));
     nombreInput.value = '';
     cantidadInput.value = '';
 });
 
 // ============================================================
-// OCR (Tesseract.js) — Reconocimiento Basado en Anclas (v2.0)
+// OCR (Tesseract.js) — Reconocimiento Basado en Anclas Dinámicas (v2.0)
 // ============================================================
 const inputArchivo = document.getElementById('screenshot-input');
 const overlay = document.getElementById('ocr-overlay');
@@ -1003,7 +1648,7 @@ function traducirEstado(status) {
     return mapa[status] || status;
 }
 
-// ---- Bandas de RESPALDO (si no se detecta el encabezado real de la imagen) ----
+// ---- Bandas de RESPALDO (solo si no se detecta ningún ancla real en la imagen) ----
 const BANDA_MENU_LATERAL_RESPALDO = 0.19;
 const BANDA_NOMBRE_RESPALDO = [0.19, 0.50];
 const BANDAS_COLUMNAS_RESPALDO = {
@@ -1022,7 +1667,7 @@ const PALABRAS_PROHIBIDAS = [
 // Anclas: palabras del encabezado real del juego. Se buscan por regex y su
 // posición (x,y) sirve para calcular las columnas dinámicamente en vez de
 // usar fracciones fijas del ancho — así no falla al cambiar de resolución,
-// recorte o dispositivo.
+// recorte o dispositivo (Anchor-Based Parsing).
 const PATRONES_ANCLA = {
     nombre: /PARTICIPANT/i,
     almacenamiento: /ALMACENAM/i,
@@ -1185,22 +1830,22 @@ function parsearPorAnclas(palabrasCrudas, ancho, alto, columnaElegida) {
     return sinDuplicados;
 }
 
-// ---------- REVISIÓN MANUAL ANTES DE CONFIRMAR ----------
+// ---------- REVISIÓN MANUAL ANTES DE CONFIRMAR (build atómico también) ----------
 function mostrarRevisionOCR(filas) {
     const cont = document.getElementById('ocr-review') || crearContenedorRevision();
     const lista = document.getElementById('ocr-review-list');
-    lista.innerHTML = '';
-    filas.forEach((fila, idx) => {
-        lista.innerHTML += `
-            <div class="flex items-center gap-2 bg-zinc-950/60 border border-zinc-800 rounded p-2">
-                <input type="text" value="${escapeHTML(fila.name)}" data-idx="${idx}" data-field="name"
-                    class="ocr-input-name bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs sm:text-sm flex-1 min-w-0 text-zinc-200" />
-                <input type="number" value="${fila.crystals}" data-idx="${idx}" data-field="crystals"
-                    class="ocr-input-crystals bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs sm:text-sm w-20 sm:w-28 text-right text-zinc-200" />
-                <button data-idx="${idx}" class="btn-quitar-ocr text-red-500 hover:text-red-400 text-sm px-1 sm:px-2 cursor-pointer shrink-0">✖</button>
-            </div>`;
-    });
-    document.querySelectorAll('.btn-quitar-ocr').forEach(btn => {
+
+    const items = filas.map((fila, idx) => `
+        <div class="flex items-center gap-2 bg-zinc-950/60 border border-zinc-800 rounded p-2">
+            <input type="text" value="${escapeHTML(fila.name)}" data-idx="${idx}" data-field="name"
+                class="ocr-input-name bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs sm:text-sm flex-1 min-w-0 text-zinc-200" />
+            <input type="number" value="${fila.crystals}" data-idx="${idx}" data-field="crystals"
+                class="ocr-input-crystals bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs sm:text-sm w-20 sm:w-28 text-right text-zinc-200" />
+            <button data-idx="${idx}" class="btn-quitar-ocr text-red-500 hover:text-red-400 text-sm px-1 sm:px-2 cursor-pointer shrink-0">✖</button>
+        </div>`);
+    lista.innerHTML = items.join('');
+
+    lista.querySelectorAll('.btn-quitar-ocr').forEach(btn => {
         btn.addEventListener('click', () => {
             const idx = parseInt(btn.getAttribute('data-idx'), 10);
             ocrPendiente.splice(idx, 1);
@@ -1263,6 +1908,217 @@ function cancelarOCR() {
     const cont = document.getElementById('ocr-review');
     if (cont) { cont.classList.add('hidden'); document.getElementById('ocr-review-list').innerHTML = ''; }
 }
+
+// ============================================================
+// CANVAS ENGINE — Nebulosa/humo rojo oscuro + gravedad hacia el puntero
+// + onda de choque radial dorada/roja al hacer clic (60 FPS estricto,
+// solo composita en canvas, sin tocar el DOM en cada frame)
+// ============================================================
+(function iniciarCanvasFX() {
+    const canvas = document.getElementById('canvas-fx');
+    const ctx = canvas.getContext('2d');
+    let w = 0, h = 0;
+
+    function redimensionar() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+    }
+    redimensionar();
+    window.addEventListener('resize', redimensionar);
+
+    const mouse = { x: w / 2, y: h / 2, activo: false };
+    window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.activo = true; });
+    window.addEventListener('mouseleave', () => { mouse.activo = false; });
+
+    const PALETA = ['185,28,28', '120,20,20', '40,10,10', '90,15,15', '60,12,12'];
+    const MAX_PARTICULAS = 55;
+    let particulas = [];
+
+    function crearParticula() {
+        return {
+            x: Math.random() * w,
+            y: h + Math.random() * 120,
+            vx: (Math.random() - 0.5) * 0.18,
+            vy: -(0.12 + Math.random() * 0.32),
+            r: 70 + Math.random() * 160,
+            vida: 0,
+            vidaMax: 700 + Math.random() * 700,
+            rgb: PALETA[Math.floor(Math.random() * PALETA.length)]
+        };
+    }
+    for (let i = 0; i < MAX_PARTICULAS; i++) {
+        const p = crearParticula();
+        p.vida = Math.random() * p.vidaMax;
+        p.y = Math.random() * h;
+        particulas.push(p);
+    }
+
+    let ondas = [];
+    window.addEventListener('click', (e) => {
+        ondas.push({ x: e.clientX, y: e.clientY, r: 6, alpha: 0.85 });
+        if (ondas.length > 12) ondas.shift();
+    });
+
+    function dibujarParticula(p) {
+        const progreso = p.vida / p.vidaMax;
+        const alphaBase = Math.sin(progreso * Math.PI) * 0.32;
+        if (alphaBase <= 0.002) return;
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        grad.addColorStop(0, `rgba(${p.rgb},${alphaBase.toFixed(3)})`);
+        grad.addColorStop(1, `rgba(${p.rgb},0)`);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function dibujarOnda(o) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(o.alpha, 0);
+        const grad = ctx.createRadialGradient(o.x, o.y, Math.max(o.r - 16, 0), o.x, o.y, o.r);
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(0.65, 'rgba(239,68,68,0.35)');
+        grad.addColorStop(0.88, 'rgba(201,160,74,0.55)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function loop() {
+        ctx.clearRect(0, 0, w, h);
+
+        for (const p of particulas) {
+            if (mouse.activo) {
+                const dx = mouse.x - p.x, dy = mouse.y - p.y;
+                const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 40);
+                const fuerza = 6 / dist;
+                p.vx += (dx / dist) * fuerza * 0.012;
+                p.vy += (dy / dist) * fuerza * 0.012;
+            }
+            p.vx *= 0.995; p.vy *= 0.995;
+            p.x += p.vx; p.y += p.vy;
+            p.vida++;
+            dibujarParticula(p);
+        }
+        // Recolección de basura de partículas muertas
+        particulas = particulas.filter(p => p.vida < p.vidaMax && p.y > -p.r * 2 && p.x > -p.r * 2 && p.x < w + p.r * 2);
+        while (particulas.length < MAX_PARTICULAS) particulas.push(crearParticula());
+
+        for (const o of ondas) { o.r += 10; o.alpha -= 0.02; dibujarOnda(o); }
+        ondas = ondas.filter(o => o.alpha > 0);
+
+        requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+})();
+
+// ============================================================
+// LUCIÉRNAGAS DEL TÍTULO — micro-partículas orgánicas (movimiento browniano)
+// ceñidas al perímetro de "MAFIA EXOTIC". Canvas propio y minúsculo (solo el
+// tamaño del título, no la pantalla completa), pausado por completo con la
+// Page Visibility API para consumo cero en pestañas inactivas.
+// ============================================================
+(function iniciarLuciernagas() {
+    const contenedor = document.getElementById('titulo-luciernagas');
+    const canvas = document.getElementById('canvas-luciernagas');
+    if (!contenedor || !canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const NUM_LUCIERNAGAS = 14;
+    let w = 0, h = 0;
+    let particulas = [];
+    let corriendo = true;
+    let rafId = null;
+
+    function redimensionar() {
+        const rect = contenedor.getBoundingClientRect();
+        w = rect.width; h = rect.height;
+        canvas.width = Math.max(1, Math.round(w * DPR));
+        canvas.height = Math.max(1, Math.round(h * DPR));
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+
+    function crearLuciernaga() {
+        return {
+            x: Math.random() * w,
+            y: Math.random() * h,
+            vx: (Math.random() - 0.5) * 0.15,
+            vy: (Math.random() - 0.5) * 0.15,
+            r: 0.8 + Math.random() * 1.4,
+            fase: Math.random() * Math.PI * 2,
+            velFase: 0.015 + Math.random() * 0.02
+        };
+    }
+
+    function poblar() {
+        particulas = Array.from({ length: NUM_LUCIERNAGAS }, crearLuciernaga);
+    }
+
+    function paso(p) {
+        // Ruido suave: pequeño empujón aleatorio en cada frame (browniano),
+        // con fricción para que la trayectoria sea fluida, no errática.
+        p.vx += (Math.random() - 0.5) * 0.02;
+        p.vy += (Math.random() - 0.5) * 0.02;
+        p.vx *= 0.98; p.vy *= 0.98;
+        p.x += p.vx; p.y += p.vy;
+        p.fase += p.velFase;
+
+        // Rebote suave dentro del perímetro del título (con margen del -inset)
+        if (p.x < -6) { p.x = -6; p.vx *= -1; }
+        if (p.x > w + 6) { p.x = w + 6; p.vx *= -1; }
+        if (p.y < -6) { p.y = -6; p.vy *= -1; }
+        if (p.y > h + 6) { p.y = h + 6; p.vy *= -1; }
+    }
+
+    function dibujar() {
+        ctx.clearRect(0, 0, w, h);
+        ctx.filter = 'blur(0.6px)';
+        for (const p of particulas) {
+            const brillo = 0.25 + Math.abs(Math.sin(p.fase)) * 0.45; // destello tenue/medio
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3.2);
+            grad.addColorStop(0, `rgba(250,204,21,${brillo.toFixed(3)})`);
+            grad.addColorStop(1, 'rgba(250,204,21,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r * 3.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function loop() {
+        if (!corriendo) return;
+        for (const p of particulas) paso(p);
+        dibujar();
+        rafId = requestAnimationFrame(loop);
+    }
+
+    function iniciarLoop() {
+        if (rafId !== null) return;
+        corriendo = true;
+        rafId = requestAnimationFrame(loop);
+    }
+    function detenerLoop() {
+        corriendo = false;
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        rafId = null;
+    }
+
+    // Page Visibility API: congela el renderizado por completo (sin rAF, sin
+    // CPU) al cambiar de pestaña; se reanuda automáticamente al volver.
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) detenerLoop();
+        else iniciarLoop();
+    });
+
+    redimensionar();
+    poblar();
+    window.addEventListener('resize', redimensionar);
+    iniciarLoop();
+})();
 </script>
 </body>
 </html>

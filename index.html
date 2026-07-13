@@ -233,7 +233,9 @@
 <canvas id="canvas-fx"></canvas>
 
 <!-- ACCESO DINÁMICO: usuario + contraseña se validan contra Firebase
-     (/usuarios_autorizados), sin contraseña maestra fija -->
+     (/usuarios_autorizados). También existe una cuenta maestra fija
+     SOLO para pruebas sin desplegar Firebase: ver MASTER_USUARIO /
+     MASTER_PASSWORD en el script -->
 <div id="login-gate" class="fixed inset-0 z-[100] bg-black flex items-center justify-center p-4">
     <div class="modal-card glass-panel-strong bg-zinc-950/75 border border-red-900/50 rounded-lg p-6 sm:p-8 max-w-xs w-full text-center shadow-2xl">
         <p class="gang-title text-red-600 text-2xl sm:text-3xl mb-1 uppercase">Mafia Exotic</p>
@@ -558,7 +560,7 @@
 // para pruebas, o protégelas con Firebase Auth si varias personas van a escribir.
 // ============================================================
 const firebaseConfig = {
-     apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
+      apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
   authDomain: "mafia-exotic-app.firebaseapp.com",
   databaseURL: "https://mafia-exotic-app-default-rtdb.firebaseio.com",
   projectId: "mafia-exotic-app",
@@ -570,14 +572,18 @@ const firebaseConfig = {
 // ============================================================
 
 const FIREBASE_LISTO = firebaseConfig.apiKey !== "TU_API_KEY_AQUI";
-// Sin contraseña maestra: el acceso se valida en vivo contra
-// /usuarios_autorizados en Firebase (ver intentarLogin).
+// El acceso normal se valida en vivo contra /usuarios_autorizados en
+// Firebase (ver intentarLogin). Además existe una cuenta maestra fija
+// SOLO para poder probar el panel sin necesidad de desplegar/configurar
+// Firebase todavía (ver MASTER_USUARIO / MASTER_PASSWORD más abajo).
 const CLAVE_USUARIO_ACTIVO = 'usuario_activo';
 
 // ============================================================
-// AUDIO UI — reemplaza esta URL por tu asset de scratch (mp3/ogg corto, <300ms)
+// CREDENCIAL MAESTRA DE PRUEBA (solo para testear sin desplegar)
+// Cambia o elimina estas constantes antes de pasar a producción.
 // ============================================================
-const AUDIO_SCRATCH_URL = 'https://actions.google.com/sounds/v1/foley/vinyl_scratch.ogg';
+const MASTER_USUARIO = 'prueba';
+const MASTER_PASSWORD = 'clave';
 
 // ---------- REGLAS DE NEGOCIO (Logística) ----------
 const MAX_JUGADORES = 50;
@@ -712,12 +718,24 @@ async function intentarLogin() {
     const usuario = campoUsuario.value.toLowerCase().trim();
     const password = campoPassword.value;
 
-    if (!FIREBASE_LISTO) {
-        mostrarErrorLogin('Firebase no está configurado: pega tus credenciales en el código para poder iniciar sesión.');
-        return;
-    }
     if (usuario.length < 2 || !password) {
         mostrarErrorLogin('Escribe usuario y contraseña.');
+        return;
+    }
+
+    // Acceso maestro de prueba: entra sin tocar Firebase para nada,
+    // así se puede probar la interfaz aunque aún no esté desplegada
+    // o configurada la base de datos.
+    if (usuario === MASTER_USUARIO && password === MASTER_PASSWORD) {
+        operatorName = usuario;
+        localStorage.setItem(CLAVE_USUARIO_ACTIVO, usuario);
+        ocultarErrorLogin();
+        iniciarApp();
+        return;
+    }
+
+    if (!FIREBASE_LISTO) {
+        mostrarErrorLogin('Firebase no está configurado: pega tus credenciales en el código para poder iniciar sesión.');
         return;
     }
 
@@ -1625,57 +1643,6 @@ function renderHistorialDespachos() {
     cont.innerHTML = filas.join('');
 }
 
-// ============================================================
-// AUDIO INMERSIVO — Web Audio API (decodificación única, disparo de baja
-// latencia). No usa <audio> por elemento: un único AudioBuffer se reutiliza
-// con un nodo BufferSource nuevo por reproducción, lo que permite scratches
-// superpuestos sin recorte ni delay, y consumo de CPU nulo en reposo.
-// ============================================================
-let audioCtx = null;
-let scratchBuffer = null;
-let audioListo = false;
-
-async function precargarAudioUI() {
-    try {
-        const Ctx = window.AudioContext || window.webkitAudioContext;
-        if (!Ctx) return;
-        audioCtx = new Ctx();
-        const resp = await fetch(AUDIO_SCRATCH_URL);
-        const arrayBuffer = await resp.arrayBuffer();
-        scratchBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        audioListo = true;
-    } catch (err) {
-        console.warn('Audio UI no disponible (se continúa sin sonido):', err);
-        audioListo = false;
-    }
-}
-
-function reproducirScratch() {
-    if (!audioListo || !scratchBuffer || !audioCtx) return;
-    // Los navegadores suspenden el AudioContext hasta el primer gesto del
-    // usuario; como este disparo YA es un gesto (click/Enter), se reanuda aquí.
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const source = audioCtx.createBufferSource();
-    source.buffer = scratchBuffer;
-    const gain = audioCtx.createGain();
-    gain.gain.value = 0.35;
-    source.connect(gain).connect(audioCtx.destination);
-    source.start(0);
-}
-
-// Precarga perezosa: arranca en el primer gesto real del usuario (el click
-// para iniciar sesión), evitando el aviso de "autoplay" del navegador.
-document.getElementById('login-btn').addEventListener('click', () => {
-    if (!audioCtx) precargarAudioUI();
-}, { once: true });
-
-// Disparo del scratch en la navegación por pestañas: cubre tanto el click
-// de ratón como la activación por teclado (Enter/Space sobre un <button>
-// nativo despacha 'click' igualmente, así que un solo listener basta).
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', reproducirScratch);
-});
-
 // ---------- TOASTS ----------
 let toastTimer = null;
 function mostrarToast(msg, tipo) {
@@ -1855,13 +1822,122 @@ inputArchivo.addEventListener('change', async (e) => {
     overlay.classList.remove('active');
     inputArchivo.value = '';
 
+    const totalDetectadoCrudo = filasCombinadas.length;
+    filasCombinadas = filtrarPorListaReal(filasCombinadas);
+    const descartados = totalDetectadoCrudo - filasCombinadas.length;
+
     if (filasCombinadas.length === 0) {
-        mostrarToast('No se detectaron filas de jugadores en las imágenes', 'err');
+        mostrarToast(
+            descartados > 0
+                ? `Se detectó texto pero ninguno coincide con jugadores reales registrados (${descartados} descartado(s))`
+                : 'No se detectaron filas de jugadores en las imágenes',
+            'err'
+        );
         return;
+    }
+    if (descartados > 0) {
+        mostrarToast(`🧹 ${descartados} lectura(s) descartada(s) por no coincidir con ningún jugador real`, 'info');
     }
     ocrPendiente = filasCombinadas;
     mostrarRevisionOCR(filasCombinadas);
 });
+
+// ============================================================
+// FILTRO ESTRICTO CONTRA LA LISTA REAL DE JUGADORES (whitelist)
+// ------------------------------------------------------------
+// El escaneo (Tesseract) a veces "inventa" filas a partir de texto de
+// fondo, nombres de clanes, etiquetas de la interfaz del juego o
+// valores sueltos del mapa. En vez de confiar solo en la lista de
+// palabras prohibidas, cada nombre detectado se compara contra el
+// diccionario oficial de jugadores REALES ya registrados en Firebase
+// (hoy + ayer). Si no hay una coincidencia razonable, la fila se
+// descarta automáticamente sin llegar siquiera a la revisión manual.
+// ============================================================
+
+// Normaliza un nombre para comparar: sin tildes, minúsculas, y solo
+// letras/números (sin espacios ni símbolos que meta el OCR).
+function normalizarNombre(str) {
+    return (str || '')
+        .toString()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+}
+
+// Distancia de Levenshtein clásica (número mínimo de ediciones para
+// convertir una cadena en la otra), usada para tolerar errores típicos
+// de lectura (0/O, 1/I/l, rn/m, letras pegadas o saltadas).
+function distanciaLevenshtein(a, b) {
+    const m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    const fila = new Array(n + 1);
+    for (let j = 0; j <= n; j++) fila[j] = j;
+    for (let i = 1; i <= m; i++) {
+        let anterior = fila[0];
+        fila[0] = i;
+        for (let j = 1; j <= n; j++) {
+            const temp = fila[j];
+            fila[j] = a[i - 1] === b[j - 1]
+                ? anterior
+                : 1 + Math.min(anterior, fila[j], fila[j - 1]);
+            anterior = temp;
+        }
+    }
+    return fila[n];
+}
+
+// Diccionario oficial: nombres reales ya presentes en Firebase (hoy y
+// ayer), que es la fuente de verdad de quiénes son integrantes reales.
+// clave normalizada -> nombre real tal como está guardado.
+function obtenerListaUsuariosReales() {
+    const mapa = new Map();
+    [...datosHoy, ...datosAyer].forEach(j => {
+        const clave = normalizarNombre(j.name);
+        if (clave && !mapa.has(clave)) mapa.set(clave, j.name);
+    });
+    return mapa;
+}
+
+// Empareja un nombre detectado contra el diccionario real. Coincidencia
+// exacta primero; si no, tolera hasta ~20% de caracteres distintos
+// (mínimo 1) para absorber errores comunes de OCR sin abrir la puerta a
+// texto completamente ajeno (nombres de clan, palabras de interfaz, etc).
+function emparejarConListaReal(nombreDetectado, diccionario) {
+    const clave = normalizarNombre(nombreDetectado);
+    if (!clave) return null;
+    if (diccionario.has(clave)) return diccionario.get(clave);
+
+    let mejor = null, mejorDist = Infinity;
+    for (const [claveReal, nombreReal] of diccionario.entries()) {
+        const dist = distanciaLevenshtein(clave, claveReal);
+        const toleranciaMax = Math.max(1, Math.ceil(Math.max(clave.length, claveReal.length) * 0.2));
+        if (dist <= toleranciaMax && dist < mejorDist) {
+            mejorDist = dist;
+            mejor = nombreReal;
+        }
+    }
+    return mejor;
+}
+
+// Filtro estricto: toda fila que no logre emparejar con un jugador real
+// se descarta de inmediato. Excepción: si la pandilla todavía no tiene
+// NINGÚN jugador registrado (arranque en blanco, sin diccionario contra
+// el cual comparar), se deja pasar todo tal cual para poder cargar a
+// los primeros integrantes; a partir de ahí el filtro ya queda activo.
+function filtrarPorListaReal(filas) {
+    const diccionario = obtenerListaUsuariosReales();
+    if (diccionario.size === 0) return filas;
+
+    const resultado = [];
+    for (const fila of filas) {
+        const nombreReal = emparejarConListaReal(fila.name, diccionario);
+        if (nombreReal) resultado.push({ ...fila, name: nombreReal });
+        // sin coincidencia con ningún jugador real => se descarta
+        // (texto de fondo, nombre de clan, palabra de interfaz, etc.)
+    }
+    return resultado;
+}
 
 function combinarFilas(base, nuevas) {
     const mapa = new Map(base.map(f => [f.name.toLowerCase(), f]));

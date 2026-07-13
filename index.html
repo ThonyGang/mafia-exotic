@@ -753,7 +753,7 @@ async function intentarLogin() {
         if (!conectado) { mostrarErrorLogin('No se pudo conectar al servidor para validar el acceso.'); return; }
 
         // Lectura única (get, no onValue) del nodo de usuarios autorizados.
-        const snap = await fbFns.get(fb_ref('registros_diarios/usuarios_autorizados'));
+        const snap = await fbFns.get(fb_ref('usuarios_autorizados'));
         const usuariosAutorizados = snap.exists() ? snap.val() : {};
 
         const existe = Object.prototype.hasOwnProperty.call(usuariosAutorizados, usuario);

@@ -45,22 +45,6 @@
 
     #canvas-fx{ position: fixed; inset: 0; z-index: -1; display: block; }
 
-    /* Luciérnagas del título: canvas propio, capa compuesta aparte (translateZ)
-       para que el navegador no repinte el resto del header en cada frame.
-       HOTFIX bloque amarillo: fondo forzado a transparente y z-index -1
-       DENTRO del contexto de apilamiento del propio título (el contenedor
-       #titulo-luciernagas es 'relative' + 'isolate', así el -1 solo lo manda
-       detrás del <h1>, nunca detrás de por ejemplo el <body>). */
-    #titulo-luciernagas{ isolation: isolate; }
-    #canvas-luciernagas{
-        background: transparent !important;
-        z-index: -1;
-        mix-blend-mode: screen;
-        transform: translateZ(0);
-        will-change: transform;
-        width: 0; height: 0;   /* evita el flash del tamaño intrínseco (300x150) antes de medir */
-    }
-
     .cinta{
         position:absolute; width:70px; height:18px;
         background: rgba(201,160,74,0.18);
@@ -249,7 +233,7 @@
 <canvas id="canvas-fx"></canvas>
 
 <!-- ACCESO DINÁMICO: usuario + contraseña se validan contra Firebase
-     (/registros_diarios/usuarios_autorizados), sin contraseña maestra fija -->
+     (/usuarios_autorizados), sin contraseña maestra fija -->
 <div id="login-gate" class="fixed inset-0 z-[100] bg-black flex items-center justify-center p-4">
     <div class="modal-card glass-panel-strong bg-zinc-950/75 border border-red-900/50 rounded-lg p-6 sm:p-8 max-w-xs w-full text-center shadow-2xl">
         <p class="gang-title text-red-600 text-2xl sm:text-3xl mb-1 uppercase">Mafia Exotic</p>
@@ -284,10 +268,7 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div class="w-full md:w-auto">
                 <p class="text-[10px] md:text-[11px] tracking-[0.25em] md:tracking-[0.3em] text-red-700 uppercase mb-1">— Expediente de Operaciones —</p>
-                <div id="titulo-luciernagas" class="relative inline-block">
-                    <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-red-600 tracking-wide gang-title uppercase leading-none break-words">Mafia Exotic</h1>
-                    <canvas id="canvas-luciernagas" class="pointer-events-none absolute"></canvas>
-                </div>
+                <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-red-600 tracking-wide gang-title uppercase leading-none break-words">Mafia Exotic</h1>
                 <p class="text-zinc-500 tracking-[0.15em] md:tracking-[0.2em] text-[10px] md:text-xs uppercase mt-2">Módulo de Esencia de Cristales · OneState RP</p>
             </div>
 
@@ -577,20 +558,19 @@
 // para pruebas, o protégelas con Firebase Auth si varias personas van a escribir.
 // ============================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
-  authDomain: "mafia-exotic-app.firebaseapp.com",
-  databaseURL: "https://mafia-exotic-app-default-rtdb.firebaseio.com",
-  projectId: "mafia-exotic-app",
-  storageBucket: "mafia-exotic-app.firebasestorage.app",
-  messagingSenderId: "782184090517",
-  appId: "1:782184090517:web:873176f8131a40a6f8c49c",
-  measurementId: "G-84EN2TJP19"
+    apiKey: "TU_API_KEY_AQUI",
+    authDomain: "TU_PROYECTO.firebaseapp.com",
+    databaseURL: "https://TU_PROYECTO-default-rtdb.firebaseio.com",
+    projectId: "TU_PROYECTO",
+    storageBucket: "TU_PROYECTO.appspot.com",
+    messagingSenderId: "TU_SENDER_ID",
+    appId: "TU_APP_ID"
 };
 // ============================================================
 
 const FIREBASE_LISTO = firebaseConfig.apiKey !== "TU_API_KEY_AQUI";
 // Sin contraseña maestra: el acceso se valida en vivo contra
-// /registros_diarios/usuarios_autorizados en Firebase (ver intentarLogin).
+// /usuarios_autorizados en Firebase (ver intentarLogin).
 const CLAVE_USUARIO_ACTIVO = 'usuario_activo';
 
 // ============================================================
@@ -669,12 +649,11 @@ async function registrarDespachoAuditoria(entry) {
 // ============================================================
 // AUTENTICACIÓN DINÁMICA ABSOLUTA (sin contraseña maestra)
 // Los pares usuario→contraseña viven en Firebase, en:
-//   /registros_diarios/usuarios_autorizados/{usuario}: "contraseña"
-// Ejemplo de nodo a crear manualmente en la consola de Firebase:
-//   registros_diarios
-//     └── usuarios_autorizados
-//           ├── santi: "clave123"
-//           └── jhozel: "otraClave"
+//   /usuarios_autorizados/{usuario}: "contraseña"
+// Ejemplo de nodo a crear manualmente en la consola de Firebase (raíz):
+//   usuarios_autorizados
+//     ├── santi: "clave123"
+//     └── jhozel: "otraClave"
 // ============================================================
 let dbConectado = false;
 
@@ -704,10 +683,7 @@ function iniciarApp() {
     document.getElementById('operador-actual').textContent = operatorName || '—';
     document.getElementById('fecha-hoy').textContent = fechaHoyStr();
 
-    // El header (y el título con las luciérnagas) pasa de display:none a
-    // visible justo aquí: se avisa explícitamente para que el canvas de
-    // partículas vuelva a medirse con el tamaño real (ver hotfix del bloque
-    // amarillo en iniciarLuciernagas).
+    // El header pasa de display:none a visible justo aquí (tras el login).
     requestAnimationFrame(() => window.dispatchEvent(new Event('mafia:app-visible')));
 
     if (FIREBASE_LISTO) {
@@ -1754,7 +1730,7 @@ document.getElementById('btn-confirmar-lote-ayer').addEventListener('click', () 
 // Borra Día Actual, Día Anterior, Histórico General e Historial de
 // Despachos (Firebase y/o localStorage). Conserva deliberadamente la
 // clave de sesión (CLAVE_USUARIO_ACTIVO) para no forzar un nuevo login,
-// y NUNCA toca /registros_diarios/usuarios_autorizados (las credenciales
+// y NUNCA toca /usuarios_autorizados (las credenciales
 // de acceso no son parte de los datos operativos que este botón purga).
 // ============================================================
 async function reiniciarSistemaCompleto() {
@@ -1784,7 +1760,7 @@ async function reiniciarSistemaCompleto() {
         }
 
         // Purga de localStorage: se excluye deliberadamente CLAVE_USUARIO_ACTIVO
-        // (y por supuesto no se toca /registros_diarios/usuarios_autorizados en
+        // (y por supuesto no se toca /usuarios_autorizados en
         // Firebase) para no forzar un nuevo login tras el reinicio.
         Object.keys(localStorage)
             .filter(k => k.startsWith('registros_diarios_') || k === 'historico_general' || k === 'historial_despachos' || k === 'control_dia_activo')
@@ -2307,180 +2283,6 @@ function cancelarOCR() {
         if (document.hidden) detenerLoopFX(); else iniciarLoopFX();
     });
     iniciarLoopFX();
-})();
-
-// ============================================================
-// LUCIÉRNAGAS DEL TÍTULO — micro-partículas orgánicas (movimiento browniano)
-// ceñidas al perímetro de "MAFIA EXOTIC". Canvas propio y minúsculo (solo el
-// tamaño del título, no la pantalla completa), pausado por completo con la
-// Page Visibility API para consumo cero en pestañas inactivas.
-//
-// HOTFIX bloque amarillo sólido: la causa raíz era que este IIFE se ejecuta
-// al cargar el script, ANTES del login — en ese momento #app-content sigue
-// en display:none, por lo que getBoundingClientRect() devolvía 0x0. El
-// canvas quedaba con un buffer de ~1px pero estirado por CSS al tamaño real
-// del título tras el login, así que un solo píxel del gradiente (con
-// mix-blend-mode:screen) se veía como un bloque amarillo sólido cubriendo
-// el encabezado. Ahora: no se dibuja nada mientras el tamaño sea 0, se
-// vuelve a medir automáticamente en cuanto la app se hace visible, y si
-// tras 3s sigue sin poder medirse (o si CUALQUIER paso falla) el canvas se
-// autodestruye para no bloquear jamás la lectura del header.
-// ============================================================
-(function iniciarLuciernagas() {
-    try {
-        const contenedor = document.getElementById('titulo-luciernagas');
-        const canvas = document.getElementById('canvas-luciernagas');
-        if (!contenedor || !canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) { destruirCanvasSeguro(canvas); return; }
-
-        const DPR = Math.min(window.devicePixelRatio || 1, 2);
-        const NUM_LUCIERNAGAS = 14;
-        let w = 0, h = 0;
-        let particulas = [];
-        let poblado = false;
-        let corriendo = false;
-        let rafId = null;
-        let watchdogId = null;
-
-        function destruir() {
-            corriendo = false;
-            if (rafId !== null) cancelAnimationFrame(rafId);
-            if (watchdogId !== null) clearTimeout(watchdogId);
-            rafId = null;
-            destruirCanvasSeguro(canvas);
-        }
-
-        function redimensionar() {
-            try {
-                const rect = canvas.getBoundingClientRect();
-                w = rect.width; h = rect.height;
-                if (w <= 0 || h <= 0) return; // header aún oculto (login-gate activo): nada que medir todavía
-                canvas.width = Math.max(1, Math.round(w * DPR));
-                canvas.height = Math.max(1, Math.round(h * DPR));
-                ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-                if (!poblado) { poblar(); poblado = true; }
-                iniciarLoop();
-            } catch (err) {
-                console.warn('Luciérnagas: fallo al redimensionar, se retira el canvas', err);
-                destruir();
-            }
-        }
-
-        function crearLuciernaga() {
-            return {
-                x: Math.random() * w,
-                y: Math.random() * h,
-                vx: (Math.random() - 0.5) * 0.15,
-                vy: (Math.random() - 0.5) * 0.15,
-                r: 0.8 + Math.random() * 1.4,
-                fase: Math.random() * Math.PI * 2,
-                velFase: 0.015 + Math.random() * 0.02
-            };
-        }
-
-        function poblar() {
-            particulas = Array.from({ length: NUM_LUCIERNAGAS }, crearLuciernaga);
-        }
-
-        function paso(p) {
-            // Ruido suave: pequeño empujón aleatorio en cada frame (browniano),
-            // con fricción para que la trayectoria sea fluida, no errática.
-            p.vx += (Math.random() - 0.5) * 0.02;
-            p.vy += (Math.random() - 0.5) * 0.02;
-            p.vx *= 0.98; p.vy *= 0.98;
-            p.x += p.vx; p.y += p.vy;
-            p.fase += p.velFase;
-
-            // Rebote suave dentro del perímetro del título (con margen del -inset)
-            if (p.x < -6) { p.x = -6; p.vx *= -1; }
-            if (p.x > w + 6) { p.x = w + 6; p.vx *= -1; }
-            if (p.y < -6) { p.y = -6; p.vy *= -1; }
-            if (p.y > h + 6) { p.y = h + 6; p.vy *= -1; }
-        }
-
-        function dibujar() {
-            // clearRect SIEMPRE es lo primero del frame — sin excepción — antes
-            // de pintar nada: esta es la garantía que evita cualquier
-            // acumulación de pintura sobrante entre frames.
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (w <= 0 || h <= 0) return;
-            ctx.filter = 'blur(0.6px)';
-            for (const p of particulas) {
-                const brillo = 0.25 + Math.abs(Math.sin(p.fase)) * 0.45; // destello tenue/medio
-                const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3.2);
-                grad.addColorStop(0, `rgba(250,204,21,${brillo.toFixed(3)})`);
-                grad.addColorStop(1, 'rgba(250,204,21,0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r * 3.2, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        function loop() {
-            if (!corriendo) return;
-            try {
-                if (w > 0 && h > 0 && poblado) {
-                    for (const p of particulas) paso(p);
-                    dibujar();
-                }
-                rafId = requestAnimationFrame(loop);
-            } catch (err) {
-                console.warn('Luciérnagas: fallo en el ciclo de render, se retira el canvas', err);
-                destruir();
-            }
-        }
-
-        function iniciarLoop() {
-            if (rafId !== null) return;
-            corriendo = true;
-            rafId = requestAnimationFrame(loop);
-        }
-        function detenerLoop() {
-            corriendo = false;
-            if (rafId !== null) cancelAnimationFrame(rafId);
-            rafId = null;
-        }
-
-        // Page Visibility API: congela el renderizado por completo (sin rAF,
-        // sin CPU) al cambiar de pestaña; se reanuda automáticamente al volver.
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) detenerLoop();
-            else iniciarLoop();
-        });
-
-        // Se vuelve a medir automáticamente cuando el canvas cambia de tamaño
-        // real — incluyendo el salto de 0x0 a tamaño real que ocurre justo
-        // cuando #app-content deja de estar oculto tras el login (la causa
-        // raíz del bug original).
-        if (window.ResizeObserver) {
-            const ro = new ResizeObserver(() => redimensionar());
-            ro.observe(canvas);
-        }
-        window.addEventListener('resize', redimensionar);
-        window.addEventListener('mafia:app-visible', redimensionar);
-
-        redimensionar();
-
-        // Vigilante de seguridad: si tras 3s el canvas sigue sin poder
-        // medirse (navegador sin ResizeObserver, contenedor nunca visible,
-        // fallo silencioso de layout), se autodestruye por precaución en
-        // vez de arriesgarse a bloquear la lectura del header.
-        watchdogId = setTimeout(() => {
-            if (w <= 0 || h <= 0) {
-                console.warn('Luciérnagas: no se pudo medir el título tras 3s, se retira el canvas por seguridad');
-                destruir();
-            }
-        }, 3000);
-    } catch (err) {
-        console.warn('Luciérnagas: error de inicialización, componente omitido', err);
-        destruirCanvasSeguro(document.getElementById('canvas-luciernagas'));
-    }
-
-    function destruirCanvasSeguro(nodo) {
-        if (nodo && nodo.parentNode) nodo.parentNode.removeChild(nodo);
-    }
 })();
 
 </script>

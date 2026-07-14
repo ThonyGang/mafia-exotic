@@ -3,789 +3,510 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>MAFIA EXOTIC — Control de Guarida | OneState RP</title>
+<title>MAFIA EXOTIC — Panel de Líderes</title>
 
-<!-- Tailwind CSS -->
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-<!-- Tipografías -->
-<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-<!-- OCR -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Lector de capturas 100% local: sin API key, sin límite de uso, sin costo -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<!-- Exportar a JPG (fork "pro": soporta los colores oklch() que genera Tailwind v4) -->
-<script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/dist/html2canvas-pro.min.js"></script>
 
 <style>
     :root{
-        --fondo: #050506;
-        --carmesi: #b91c1c;
-        --carmesi-glow: #ef4444;
-        --oro: #c9a04a;
-        --oro-mvp: #facc15;
-        --ceniza: #71717a;
-        --hueso: #e6e4df;
+        --bg:#07070a;
+        --surface: rgba(255,255,255,0.035);
+        --surface-strong: rgba(255,255,255,0.06);
+        --hairline: rgba(255,255,255,0.09);
+        --hairline-strong: rgba(255,255,255,0.15);
+        --text-1:#f5f4f2;
+        --text-2:#9d9da3;
+        --text-3:#6a6a70;
+        --accent:#e0393e;
+        --accent-dim:#a82327;
+        --accent-soft: rgba(224,57,62,0.14);
+        --r-lg:20px;
+        --r-md:14px;
+        --r-sm:9px;
+        --ease: cubic-bezier(.16,1,.3,1);
     }
-    html, body{ overflow-x: hidden; }
+    html{ overflow-x:hidden; background:var(--bg); }
     body{
-        font-family: 'Rajdhani', sans-serif;
-        background-color: var(--fondo);
-        color: var(--hueso);
+        overflow-x:hidden;
+        font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-feature-settings:'ss01' 1, 'cv01' 1;
+        -webkit-font-smoothing:antialiased;
+        color:var(--text-1);
+        min-height:100vh;
+        letter-spacing:-0.011em;
+    }
+    .eyebrow{ font-size:10.5px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-3); }
+    .brand-title{
+        font-weight:800; letter-spacing:-0.035em;
+        background:linear-gradient(180deg, #ff6b67 0%, #c22a2e 100%);
+        -webkit-background-clip:text; background-clip:text; color:transparent;
+        text-shadow:0 4px 40px rgba(224,57,62,0.25);
+    }
+    .mono{ font-family:ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace; font-variant-numeric:tabular-nums; }
+
+    /* ==================== FONDO AMBIENTE (CSS puro) ==================== */
+    #nebula-bg{
+        position:fixed; inset:0; z-index:-2; overflow:hidden; background:var(--bg);
+    }
+    .parallax-layer{
+        position:absolute; inset:0; will-change:transform;
+    }
+    #nebula-bg .blob{
+        position:absolute; border-radius:50%; filter:blur(105px); mix-blend-mode:screen;
+        will-change:transform, opacity;
+    }
+    .blob-1{ width:48vmax; height:48vmax; top:-18vmax; left:-14vmax; background:radial-gradient(circle, var(--nebula-1) 0%, rgba(180,38,42,0.14) 38%, transparent 72%); animation: drift1 38s var(--ease) infinite, ghost-pulse 9s ease-in-out infinite; }
+    .blob-2{ width:44vmax; height:44vmax; bottom:-20vmax; right:-14vmax; background:radial-gradient(circle, var(--nebula-2) 0%, rgba(84,20,56,0.12) 38%, transparent 72%); animation: drift2 31s var(--ease) infinite, ghost-pulse 11s ease-in-out infinite; animation-delay:0s, -3s; }
+    .blob-3{ width:36vmax; height:36vmax; top:16vh; right:0vw; background:radial-gradient(circle, var(--nebula-3) 0%, rgba(24,18,44,0.14) 38%, transparent 72%); animation: drift3 26s var(--ease) infinite, ghost-pulse 8s ease-in-out infinite; animation-delay:0s, -5s; }
+    .blob-4{ width:30vmax; height:30vmax; bottom:2vh; left:6vw; background:radial-gradient(circle, var(--nebula-4) 0%, rgba(224,57,62,0.1) 38%, transparent 72%); animation: drift4 33s var(--ease) infinite, ghost-pulse 10s ease-in-out infinite; animation-delay:0s, -7s; }
+
+    @keyframes drift1{
+        0%,100%{ transform:translate(0,0) scale(1); }
+        50%{ transform:translate(12vw,10vh) scale(1.18); }
+    }
+    @keyframes drift2{
+        0%,100%{ transform:translate(0,0) scale(1); }
+        50%{ transform:translate(-10vw,-12vh) scale(1.15); }
+    }
+    @keyframes drift3{
+        0%,100%{ transform:translate(0,0) scale(1); }
+        50%{ transform:translate(-9vw,9vh) scale(1.22); }
+    }
+    @keyframes drift4{
+        0%,100%{ transform:translate(0,0) scale(1); }
+        50%{ transform:translate(8vw,-7vh) scale(1.12); }
+    }
+    @keyframes ghost-pulse{
+        0%,100%{ opacity:0.7; }
+        50%{ opacity:1; }
+    }
+    #nebula-bg .estrellas{
+        position:absolute; inset:-10%; opacity:0.4;
         background-image:
-            radial-gradient(ellipse 80% 50% at 50% -10%, rgba(185,28,28,0.12), transparent),
-            radial-gradient(ellipse 60% 40% at 100% 110%, rgba(120,20,20,0.10), transparent);
+            radial-gradient(1.3px 1.3px at 20% 30%, #fff, transparent),
+            radial-gradient(1.3px 1.3px at 65% 15%, #fff, transparent),
+            radial-gradient(1px 1px at 80% 60%, #fff, transparent),
+            radial-gradient(1.3px 1.3px at 40% 80%, #fff, transparent),
+            radial-gradient(1px 1px at 90% 90%, #fff, transparent),
+            radial-gradient(1.3px 1.3px at 10% 65%, #fff, transparent);
+        background-size:220px 220px;
+        animation: parpadeo 6s linear infinite;
     }
-    .gang-title{ font-family: 'Permanent Marker', cursive; }
-    .mono{ font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; }
-
+    @keyframes parpadeo{ 0%,100%{ opacity:0.25; } 50%{ opacity:0.5; } }
     .grano::before{
-        content:"";
-        position: fixed; inset:0; z-index: 0; pointer-events:none;
-        opacity: 0.05; mix-blend-mode: overlay;
-        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+        content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:0.035; mix-blend-mode:overlay;
+        background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     }
 
-    #canvas-fx{ position: fixed; inset: 0; z-index: -1; display: block; }
-
-    .cinta{
-        position:absolute; width:70px; height:18px;
-        background: rgba(201,160,74,0.18);
-        border: 1px solid rgba(201,160,74,0.35);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-    }
-    @media (max-width: 640px){ .cinta{ display:none; } }
-
-    .punto-vivo{
-        width:8px; height:8px; border-radius:9999px; background:#22c55e;
-        box-shadow: 0 0 0 0 rgba(34,197,94,0.7);
-        animation: pulso 1.8s infinite;
-        flex-shrink: 0;
-    }
-    .punto-vivo.offline{ background:#71717a; animation:none; box-shadow:none; }
-    @keyframes pulso{
-        0%{ box-shadow: 0 0 0 0 rgba(34,197,94,0.55); }
-        70%{ box-shadow: 0 0 0 7px rgba(34,197,94,0); }
-        100%{ box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    :root{
+        --nebula-1: rgba(180,38,42,0.46);
+        --nebula-2: rgba(84,20,56,0.40);
+        --nebula-3: rgba(24,18,44,0.44);
+        --nebula-4: rgba(224,57,62,0.32);
     }
 
-    .fila-oro{ border-left: 3px solid var(--oro) !important; background: linear-gradient(90deg, rgba(201,160,74,0.08), transparent); }
-    .fila-mvp{ border-left: 3px solid var(--oro-mvp) !important; background: linear-gradient(90deg, rgba(250,204,21,0.10), transparent); }
-    .fila-compacta td{ padding-top:2px; padding-bottom:2px; }
-
-    /* ---------- JERARQUÍA VISUAL DE JUGADORES ---------- */
-    .txt-mvp{
-        color: var(--oro-mvp);
-        text-shadow: 0 0 6px rgba(250,204,21,0.55), 0 0 14px rgba(250,204,21,0.30);
-        animation: pulso-mvp 2.4s ease-in-out infinite;
-        will-change: text-shadow;
+    /* ==================== SUPERFICIES ==================== */
+    .glass-panel{
+        background:var(--surface);
+        backdrop-filter:blur(22px) saturate(140%); -webkit-backdrop-filter:blur(22px) saturate(140%);
+        border:1px solid var(--hairline);
+        border-radius:var(--r-md);
+        box-shadow:0 12px 40px rgba(0,0,0,0.35);
     }
-    @keyframes pulso-mvp{
-        0%,100%{ text-shadow: 0 0 6px rgba(250,204,21,0.55), 0 0 14px rgba(250,204,21,0.30); }
-        50%{ text-shadow: 0 0 12px rgba(250,204,21,0.95), 0 0 26px rgba(250,204,21,0.55); }
+    .glass-panel-strong{
+        background:var(--surface-strong);
+        backdrop-filter:blur(30px) saturate(150%); -webkit-backdrop-filter:blur(30px) saturate(150%);
+        border:1px solid var(--hairline-strong);
+        border-radius:var(--r-lg);
+        box-shadow:0 24px 70px rgba(0,0,0,0.55);
     }
-    .txt-calificado{ color: var(--oro); font-weight: 700; }
-    .txt-no-calificado{ color: var(--hueso); opacity: 0.65; }
+    .fila-bloqueada{ background:linear-gradient(90deg, rgba(224,57,62,0.12), transparent) !important; border-left:2px solid var(--accent); }
+    .neon-red{ filter:drop-shadow(0 0 6px rgba(224,57,62,0.5)); }
 
-    /* ---------- STEPPER + FLASH DE FEEDBACK (60fps: transform/opacity/color) ---------- */
-    .tab-btn{
-        font-family: 'Rajdhani', sans-serif; font-weight:700; text-transform:uppercase;
-        letter-spacing:0.08em; font-size:11px; padding:10px 14px;
-        color:#71717a; border-bottom:2px solid transparent; white-space:nowrap;
-        cursor:pointer; transition: color .15s ease, border-color .15s ease;
+    /* ==================== CONTROLES ==================== */
+    input, select{
+        background:rgba(255,255,255,0.04); border:1px solid var(--hairline); border-radius:var(--r-sm);
+        color:var(--text-1); transition:border-color .18s var(--ease), background .18s var(--ease);
     }
-    .tab-btn:hover{ color:#d4d4d8; }
-    .tab-btn.tab-activo{ color:#ef4444; border-bottom-color:#b91c1c; }
+    input::placeholder{ color:var(--text-3); }
+    input:focus, select:focus{ outline:none; border-color:rgba(224,57,62,0.55); background:rgba(255,255,255,0.06); box-shadow:0 0 0 3px var(--accent-soft); }
 
-    .vista{ opacity: 1; will-change: opacity; transition: opacity .18s ease; }
-    .vista.hidden{ display:none; }
-
-    /* ---------- NAVEGACIÓN HORIZONTAL ACELERADA POR HARDWARE ---------- */
-    /* El viewport recorta; el track es UNA capa compuesta que se desplaza
-       con translate3d — no hay reflow porque no se toca width/left/display,
-       solo 'transform', que el compositor mueve directo en la GPU. */
-    #vistas-viewport{ overflow: hidden; position: relative; }
-    #vistas-track{
-        display: flex;
-        width: 600%;                 /* 6 subpáginas x 100% del viewport cada una */
-        transform: translate3d(0, 0, 0);
-        transition: transform .5s cubic-bezier(.22, 1, .36, 1);
-        will-change: transform;
-        backface-visibility: hidden;
+    .btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:6px;
+        font-weight:600; font-size:12.5px; letter-spacing:-0.01em;
+        border-radius:var(--r-sm); padding:9px 16px; cursor:pointer;
+        transition:transform .12s var(--ease), background .18s var(--ease), border-color .18s var(--ease), opacity .18s var(--ease);
+        border:1px solid transparent;
     }
-    #vistas-track > .vista{
-        width: calc(100% / 6);
-        flex: 0 0 calc(100% / 6);
-        min-width: 0;
-    }
-    /* Dentro del track ya no se usa display:none para ocultar: todas las
-       subpáginas existen en el DOM y layout todo el tiempo, solo quedan
-       fuera del viewport visible. Evita reflow al conmutar. */
-    #vistas-track > .vista.hidden{ display: block; }
+    .btn:active{ transform:scale(0.97); }
+    .btn-primary{ background:var(--accent); color:#fff; box-shadow:0 6px 20px rgba(224,57,62,0.25); }
+    .btn-primary:hover{ background:#ee4a4f; }
+    .btn-secondary{ background:rgba(255,255,255,0.045); border-color:var(--hairline); color:var(--text-1); }
+    .btn-secondary:hover{ border-color:var(--hairline-strong); background:rgba(255,255,255,0.07); }
+    .btn-ghost{ background:transparent; border-color:var(--hairline); color:var(--text-2); }
+    .btn-ghost:hover{ border-color:var(--accent-dim); color:var(--text-1); }
+    .btn-danger{ background:rgba(224,57,62,0.12); border-color:rgba(224,57,62,0.35); color:#ff8a8d; }
+    .btn-danger:hover{ background:rgba(224,57,62,0.2); }
+    .btn-danger-solid{ background:var(--accent); color:#fff; box-shadow:0 8px 26px rgba(224,57,62,0.3); }
+    .btn-danger-solid:hover{ background:#ee4a4f; }
 
-    .modal-card{ transition: transform .3s ease, opacity .3s ease; will-change: transform, opacity; }
+    #dropzone{ transition:border-color .2s var(--ease), background-color .2s var(--ease); }
+    #dropzone.arrastrando{ border-color:var(--accent); background-color:var(--accent-soft); }
 
-    .badge-caja-abierta{ background:#14532d; color:#86efac; }
-    .badge-caja-cerrada{ background:#450a0a; color:#fca5a5; }
-
-    .stepper-btn{
-        width:22px; height:22px; display:flex; align-items:center; justify-content:center;
-        border-radius:4px; background:#27272a; color:#d4d4d8; font-weight:700; cursor:pointer;
-        font-size:13px; line-height:1; user-select:none;
-        transition: background .15s ease, transform .1s ease;
-        will-change: transform;
-    }
-    .stepper-btn:hover{ background:#3f3f46; }
-    .stepper-btn:active{ transform: scale(0.88); }
-    .stepper-btn:disabled{ opacity:0.3; cursor:not-allowed; }
-
-    .viajes-num{ display:inline-block; will-change: transform, color; }
-    .flash-num{ animation: flash-pop .55s cubic-bezier(.22,1.4,.36,1); }
-    @keyframes flash-pop{
-        0%{ transform: scale(1); color: inherit; }
-        30%{ transform: scale(1.4); color: #4ade80; }
-        100%{ transform: scale(1); color: inherit; }
-    }
-
-    /* Pips de despachos (blanco = disponible / verde = entregado) */
-    .pip{ width:10px; height:10px; border-radius:2px; display:inline-block; will-change: transform; }
-    .pip-pending{ background: var(--hueso); opacity:0.35; box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset; }
-    .pip-ok{ background:#22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.65); }
-
-    .ocr-overlay{
-        position: fixed; inset: 0; background: rgba(2,2,3,0.92);
-        display:none; align-items:center; justify-content:center; z-index:50;
-        padding: 16px;
-    }
-    .ocr-overlay.active{ display:flex; }
-    .spinner{
-        border: 3px solid #27272a; border-top: 3px solid var(--carmesi);
-        border-radius: 50%; width: 44px; height: 44px;
-        animation: spin 0.9s linear infinite;
-    }
-    @keyframes spin{ to{ transform: rotate(360deg); } }
+    .spinner{ border:2.5px solid rgba(255,255,255,0.1); border-top:2.5px solid var(--accent); border-radius:50%; width:36px; height:36px; animation:spin .8s linear infinite; }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
 
     .toast{
-        position: fixed; bottom: 16px; right: 16px; left: 16px; z-index: 60;
-        padding: 12px 18px; border-radius: 6px; font-weight: 700;
-        font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-        border-left: 4px solid transparent;
-        transform: translateY(16px); opacity: 0;
-        transition: transform 0.25s ease, opacity 0.25s ease;
-        pointer-events: none; max-width: 320px; margin-left: auto;
-        will-change: transform, opacity;
+        position:fixed; bottom:16px; right:16px; left:16px; z-index:60; padding:12px 16px; border-radius:var(--r-sm);
+        font-weight:600; font-size:0.8rem; letter-spacing:-0.01em; box-shadow:0 12px 32px rgba(0,0,0,0.5);
+        border-left:3px solid transparent; transform:translateY(12px); opacity:0; transition:transform .3s var(--ease), opacity .3s var(--ease);
+        pointer-events:none; max-width:340px; margin-left:auto;
+        background:rgba(20,20,23,0.85); backdrop-filter:blur(16px);
     }
-    @media (min-width: 640px){ .toast{ left: auto; bottom: 20px; right: 20px; } }
-    .toast.show{ transform: translateY(0); opacity: 1; }
-    .toast.ok{ background:#111114; color:#86efac; border-color:#16a34a; }
-    .toast.err{ background:#151013; color:#fca5a5; border-color:var(--carmesi); }
-    .toast.info{ background:#111114; color:#d4d4d8; border-color:#52525b; }
+    @media (min-width:640px){ .toast{ left:auto; bottom:20px; right:20px; } }
+    .toast.show{ transform:translateY(0); opacity:1; }
+    .toast.ok{ color:#86efac; border-color:#22c55e; }
+    .toast.err{ color:#fca5a5; border-color:var(--accent); }
+    .toast.info{ color:#d4d4d8; border-color:#52525b; }
 
     ::-webkit-scrollbar{ height:6px; width:6px; }
     ::-webkit-scrollbar-thumb{ background:#3f3f46; border-radius:4px; }
 
-    #login-gate input::placeholder{ color:#52525b; }
+    .icon-btn{ width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; cursor:pointer; transition:background .15s var(--ease), transform .1s var(--ease), color .15s var(--ease); color:var(--text-2); }
+    .icon-btn svg{ width:14px; height:14px; }
+    .icon-btn:active{ transform:scale(0.88); }
+    .icon-btn.is-edit:hover{ background:rgba(255,255,255,0.08); color:var(--text-1); }
+    .icon-btn.is-save:hover{ background:rgba(34,197,94,0.15); color:#4ade80; }
+    .icon-btn.is-delete:hover{ background:rgba(224,57,62,0.15); color:#ff8a8d; }
+    .icon-btn.is-cancel:hover{ background:rgba(255,255,255,0.08); color:var(--text-1); }
 
-    /* ============================================================
-       GLASSMORPHISM + NEUMORFISMO — rediseño visual radical
-       ============================================================
-       .glass-panel se apila SOBRE los fondos semitransparentes que ya
-       traía Tailwind (bg-zinc-950/60, /70, /80): no toca background-color
-       (evita peleas de especificidad con las clases de Tailwind inyectadas
-       en runtime), solo agrega el desenfoque de fondo, el borde biselado
-       con micro-brillo y la sombra de profundidad neumórfica. */
-    .glass-panel{
-        backdrop-filter: blur(18px) saturate(150%);
-        -webkit-backdrop-filter: blur(18px) saturate(150%);
-        border: 1px solid rgba(255,255,255,0.07);
-        box-shadow:
-            0 10px 34px rgba(0,0,0,0.55),
-            inset 0 1px 0 rgba(255,255,255,0.06),
-            inset 0 -1px 0 rgba(0,0,0,0.35);
+    .stat-card{ transition:transform .25s var(--ease), border-color .2s var(--ease); animation:aparecer .5s var(--ease) both; }
+    .stat-card:hover{ transform:translateY(-2px); border-color:var(--hairline-strong); }
+
+    #podio > div{ animation:aparecer .5s var(--ease) both; }
+    #podio > div:nth-child(2){ animation-delay:.07s; }
+    #podio > div:nth-child(3){ animation-delay:.14s; }
+
+    @keyframes aparecer{
+        from{ opacity:0; transform:translateY(8px); }
+        to{ opacity:1; transform:translateY(0); }
     }
-    .glass-panel-strong{
-        backdrop-filter: blur(26px) saturate(165%);
-        -webkit-backdrop-filter: blur(26px) saturate(165%);
-        border: 1px solid rgba(239,68,68,0.18);
-        box-shadow:
-            0 16px 48px rgba(0,0,0,0.65),
-            inset 0 1px 0 rgba(255,255,255,0.08),
-            inset 0 -1px 0 rgba(0,0,0,0.4),
-            0 0 34px rgba(239,68,68,0.08);
-    }
-    /* Neumorfismo en controles interactivos: biselado sutil + reacción al click */
-    .stepper-btn, #login-btn, #btn-refrescar-analitica, .btn-exportar, #btn-traspaso, #btn-reiniciar, #btn-reset-sistema{
-        box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 -2px 4px rgba(0,0,0,0.4) inset, 0 4px 10px rgba(0,0,0,0.35);
-    }
-    .stepper-btn:active, #login-btn:active{
-        box-shadow: 0 -1px 0 rgba(255,255,255,0.05) inset, 0 2px 4px rgba(0,0,0,0.45) inset;
-    }
-    /* Acentos neón — rojo #ef4444 y dorado #facc15 (paleta ya definida en :root) */
-    .neon-red{ text-shadow: 0 0 8px rgba(239,68,68,0.65), 0 0 22px rgba(239,68,68,0.35); }
-    .neon-gold{ text-shadow: 0 0 8px rgba(250,204,21,0.65), 0 0 22px rgba(250,204,21,0.35); }
-    .gang-title{ text-shadow: 0 0 14px rgba(239,68,68,0.45), 0 0 34px rgba(239,68,68,0.2); }
-    input:focus, select:focus{
-        box-shadow: 0 0 0 2px rgba(239,68,68,0.35), 0 0 14px rgba(239,68,68,0.2);
+
+    #tabla-jugadores-body tr{ transition:background-color .15s var(--ease); border-bottom:1px solid var(--hairline); }
+    #tabla-jugadores-body tr:last-child{ border-bottom:none; }
+    #tabla-jugadores-body tr:hover{ background-color:rgba(255,255,255,0.025); }
+
+    .flash-valor{ display:inline-block; animation:flash-pop .7s cubic-bezier(.22,1.4,.36,1); }
+    @keyframes flash-pop{
+        0%{ transform:scale(1); }
+        30%{ transform:scale(1.25); color:#4ade80; }
+        100%{ transform:scale(1); }
     }
 </style>
 </head>
 <body class="grano text-zinc-100 min-h-screen p-3 sm:p-4 md:p-8">
 
-<!-- CANVAS DE ATMÓSFERA (nebulosa / humo + gravedad de puntero + onda de choque) -->
-<canvas id="canvas-fx"></canvas>
+<div id="nebula-bg">
+    <div class="parallax-layer" data-depth="1.5"><div class="blob blob-1"></div></div>
+    <div class="parallax-layer" data-depth="1.0"><div class="blob blob-2"></div></div>
+    <div class="parallax-layer" data-depth="0.6"><div class="blob blob-3"></div></div>
+    <div class="parallax-layer" data-depth="1.2"><div class="blob blob-4"></div></div>
+    <div class="parallax-layer" data-depth="0.3"><div class="estrellas"></div></div>
+</div>
 
-<!-- ACCESO DINÁMICO: usuario + contraseña se validan contra Firebase
-     (/usuarios_autorizados). También existe una cuenta maestra fija
-     SOLO para pruebas sin desplegar Firebase: ver MASTER_USUARIO /
-     MASTER_PASSWORD en el script -->
-<div id="login-gate" class="fixed inset-0 z-[100] bg-black flex items-center justify-center p-4">
-    <div class="modal-card glass-panel-strong bg-zinc-950/75 border border-red-900/50 rounded-lg p-6 sm:p-8 max-w-xs w-full text-center shadow-2xl">
-        <p class="gang-title text-red-600 text-2xl sm:text-3xl mb-1 uppercase">Mafia Exotic</p>
-        <p class="text-zinc-500 text-[10px] sm:text-xs uppercase tracking-widest mb-1">Acceso restringido</p>
-        <p class="text-amber-600 text-[9px] uppercase tracking-[0.2em] mb-6">Validado en vivo contra Firebase</p>
+<script>
+(function(){
+    var layers = document.querySelectorAll('.parallax-layer');
+    var targetX = 0, targetY = 0, curX = 0, curY = 0;
+    var targetScroll = 0, curScroll = 0;
 
-        <input type="text" id="login-usuario" placeholder="Usuario / alias de operador" maxlength="30"
-            class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2.5 text-sm text-zinc-200 mb-3 text-center outline-none focus:border-amber-600" />
-        <input type="password" id="login-password" placeholder="Contraseña de acceso"
-            class="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2.5 text-sm text-zinc-200 mb-3 text-center outline-none focus:border-red-700" />
-        <button id="login-btn" class="w-full bg-red-700 hover:bg-red-600 active:bg-red-800 text-white font-bold text-xs uppercase tracking-wide px-4 py-2.5 rounded cursor-pointer transition-colors">Entrar</button>
-        <p id="login-error" class="text-red-500 text-xs mt-3 hidden">Usuario o contraseña inválidos</p>
-        <p class="text-zinc-700 text-[9px] mt-4 leading-relaxed">Cada acción quedará firmada con tu nombre de operador para trazabilidad de auditoría.</p>
+    window.addEventListener('mousemove', function(e){
+        targetX = (e.clientX / window.innerWidth - 0.5) * 2;
+        targetY = (e.clientY / window.innerHeight - 0.5) * 2;
+    }, { passive: true });
+
+    window.addEventListener('scroll', function(){
+        targetScroll = window.scrollY;
+    }, { passive: true });
+
+    function tick(){
+        curX += (targetX - curX) * 0.055;
+        curY += (targetY - curY) * 0.055;
+        curScroll += (targetScroll - curScroll) * 0.055;
+        layers.forEach(function(layer){
+            var depth = parseFloat(layer.dataset.depth) || 1;
+            var px = curX * 26 * depth;
+            var py = curY * 20 * depth + curScroll * 0.05 * depth;
+            layer.style.transform = 'translate3d(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px,0)';
+        });
+        requestAnimationFrame(tick);
+    }
+    tick();
+})();
+</script>
+
+<!-- ==================== LOGIN — validado en vivo contra Firebase ==================== -->
+<div id="login-gate" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:radial-gradient(ellipse 80% 60% at 50% 40%, rgba(7,7,10,0.02), rgba(7,7,10,0.5));">
+    <div class="glass-panel-strong p-7 sm:p-9 max-w-[340px] w-full text-center">
+        <p class="brand-title text-3xl sm:text-[2.15rem] mb-1 leading-none">Mafia Exotic</p>
+        <p class="eyebrow mb-7">Acceso exclusivo de líderes</p>
+
+        <input type="text" id="login-usuario" placeholder="Usuario" maxlength="30"
+            class="w-full px-3.5 py-3 text-sm mb-2.5 text-center" />
+        <input type="password" id="login-password" placeholder="Contraseña"
+            class="w-full px-3.5 py-3 text-sm mb-4 text-center" />
+        <button id="login-btn" class="btn btn-primary w-full py-3">Entrar</button>
+        <p id="login-error" class="text-[13px] mt-4 hidden" style="color:#ff8a8d;"></p>
+        <p class="text-[10.5px] mt-6" style="color:var(--text-3);">Validado en vivo contra Firebase</p>
     </div>
 </div>
 
-<div id="ocr-overlay" class="ocr-overlay">
-    <div class="glass-panel-strong bg-zinc-950/75 border border-red-800/40 rounded-lg p-6 sm:p-8 flex flex-col items-center gap-4 max-w-sm w-full text-center">
-        <div class="spinner"></div>
-        <p class="font-bold text-red-500 uppercase tracking-[0.15em] text-sm">⏳ Escaneando capturas...</p>
-        <p id="ocr-progress" class="text-xs text-zinc-500 mono">Iniciando</p>
-    </div>
-</div>
+<div id="app-content" class="hidden">
 
 <div id="toast" class="toast"></div>
 
-<div id="app-content" class="hidden">
+<div id="overlay-procesando" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(7,7,10,0.75); backdrop-filter:blur(6px);">
+    <div class="glass-panel-strong p-7 sm:p-9 flex flex-col items-center gap-4 max-w-sm w-full text-center">
+        <div class="spinner"></div>
+        <p class="font-semibold text-sm">Escaneando captura…</p>
+        <p id="overlay-progreso" class="text-xs mono" style="color:var(--text-3);">Iniciando</p>
+    </div>
+</div>
+
+<div id="modal-nuevos" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(7,7,10,0.75); backdrop-filter:blur(6px);">
+    <div class="glass-panel-strong p-6 max-w-md w-full max-h-[80vh] flex flex-col">
+        <h3 class="font-semibold text-[15px] mb-1">🆕 Jugadores nuevos detectados</h3>
+        <p class="text-[12.5px] mb-4" style="color:var(--text-2);">No estaban en tu lista todavía. Revisa y confirma cuáles agregar — se crean y se les acredita de una vez el valor leído en esta captura.</p>
+        <div id="lista-nuevos" class="space-y-2 overflow-y-auto flex-1 mb-4"></div>
+        <div class="flex gap-2">
+            <button id="btn-confirmar-nuevos" class="btn btn-primary flex-1">Agregar seleccionados</button>
+            <button id="btn-cancelar-nuevos" class="btn btn-ghost">Descartar</button>
+        </div>
+    </div>
+</div>
+
 <div class="max-w-6xl mx-auto relative z-10">
 
-    <!-- ENCABEZADO -->
-    <header class="border-b border-red-900/60 pb-5 mb-4">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div class="w-full md:w-auto">
-                <p class="text-[10px] md:text-[11px] tracking-[0.25em] md:tracking-[0.3em] text-red-700 uppercase mb-1">— Expediente de Operaciones —</p>
-                <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-red-600 tracking-wide gang-title uppercase leading-none break-words">Mafia Exotic</h1>
-                <p class="text-zinc-500 tracking-[0.15em] md:tracking-[0.2em] text-[10px] md:text-xs uppercase mt-2">Módulo de Esencia de Cristales · OneState RP</p>
+    <header class="pb-6 mb-8" style="border-bottom:1px solid var(--hairline);">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+                <p class="eyebrow mb-2">Panel exclusivo de líderes</p>
+                <h1 class="brand-title text-4xl sm:text-5xl leading-none">Mafia Exotic</h1>
+                <p class="text-[13px] mt-2.5" style="color:var(--text-2);">Control de esencias · Firebase Realtime Database</p>
             </div>
-
-            <!-- SEÑAL EN VIVO + RELOJ UTC+0 + OPERADOR -->
-            <div class="bg-zinc-950/80 glass-panel border border-zinc-800 rounded-lg px-4 py-3 flex flex-col items-start md:items-end gap-1 w-full md:w-auto md:min-w-[240px]">
-                <div class="flex items-center gap-2">
-                    <span id="punto-señal" class="punto-vivo offline"></span>
-                    <span id="texto-señal" class="text-[11px] tracking-widest text-zinc-400 uppercase mono">Conectando señal...</span>
-                </div>
-                <p id="reloj" class="mono text-red-500 font-bold text-base sm:text-lg tracking-wider">--:--:-- UTC · --/--/----</p>
-                <p class="text-[10px] text-zinc-600 uppercase tracking-widest">Operador: <span id="operador-actual" class="text-zinc-300 font-bold">—</span> · <button id="btn-cerrar-sesion" class="text-red-700 hover:text-red-500 underline cursor-pointer normal-case tracking-normal">cerrar sesión</button></p>
+            <div class="text-right">
+                <p class="text-[11px]" style="color:var(--text-3);">Operador <span id="operador-actual" class="font-semibold" style="color:var(--text-1);">—</span></p>
+                <button id="btn-cerrar-sesion" class="text-[11px] cursor-pointer mt-1" style="color:var(--text-3);">Cerrar sesión</button>
             </div>
+        </div>
+        <div class="flex items-center gap-2 mt-4">
+            <span id="punto-señal" class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+            <span id="texto-señal" class="text-[11px] mono" style="color:var(--text-3);">Conectando…</span>
         </div>
     </header>
 
-    <!-- PESTAÑAS -->
-    <nav class="flex gap-1 mb-6 overflow-x-auto border-b border-zinc-800">
-        <button class="tab-btn tab-activo" data-tab="hoy">01 · Día Actual</button>
-        <button class="tab-btn" data-tab="ayer">02 · Día Anterior</button>
-        <button class="tab-btn" data-tab="historico">03 · Histórico General</button>
-        <button class="tab-btn" data-tab="despachos">04 · Despachos</button>
-        <button class="tab-btn" data-tab="historial">05 · Historial de Despachos</button>
-        <button class="tab-btn" data-tab="analitica">06 · Analítica</button>
-    </nav>
+    <!-- ==================== DASHBOARD DE ESTADÍSTICAS ==================== -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <div class="stat-card glass-panel p-4 text-center">
+            <p class="text-[26px] font-bold mono" id="stat-jugadores" style="color:var(--text-1);">0</p>
+            <p class="eyebrow mt-1">Jugadores</p>
+        </div>
+        <div class="stat-card glass-panel p-4 text-center">
+            <p class="text-[26px] font-bold mono" style="color:#f5c451;" id="stat-esencias">0</p>
+            <p class="eyebrow mt-1">Esencias totales</p>
+        </div>
+        <div class="stat-card glass-panel p-4 text-center">
+            <p class="text-[26px] font-bold mono" style="color:var(--accent);" id="stat-bloqueados">0</p>
+            <p class="eyebrow mt-1">Bloqueados</p>
+        </div>
+        <div class="stat-card glass-panel p-4 text-center">
+            <p class="text-[26px] font-bold mono" style="color:var(--text-1);" id="stat-despachos">0</p>
+            <p class="eyebrow mt-1">Despachos</p>
+        </div>
+    </section>
 
-    <!-- Viewport + track: navegación horizontal por transform: translate3d(),
-         sin display:none. El viewport recorta con overflow-hidden y el track
-         (6 slides al 100% cada uno) se desplaza como una sola capa compuesta. -->
-    <div id="vistas-viewport">
-    <div id="vistas-track">
+    <!-- ==================== ZONA DE CARGA / LECTOR IA ==================== -->
+    <section class="mb-8">
+        <div class="glass-panel p-5 mb-3">
+            <label class="eyebrow block mb-2">Líder que gestiona este despacho</label>
+            <input type="text" id="input-lider" placeholder="Tu nombre / alias" class="w-full sm:w-80 px-3.5 py-2.5 text-sm mb-4" />
 
-    <!-- ==================== VISTA 1: DÍA ACTUAL ==================== -->
-    <div id="vista-hoy" class="vista">
+            <label class="eyebrow block mb-2">Columna a leer de la tabla "Participantes"</label>
+            <select id="input-columna" class="w-full sm:w-80 px-3.5 py-2.5 text-sm">
+                <option value="En almacenamiento">En almacenam.</option>
+                <option value="Cargado en refinadores">Cargado en refinadores</option>
+                <option value="Transferido para clasificación">Transferido para clasif.</option>
+                <option value="Entregado">Entregado</option>
+            </select>
+        </div>
 
+        <div id="dropzone" class="glass-panel p-9 text-center cursor-pointer" style="border-style:dashed; border-color:var(--hairline-strong);">
+            <p class="text-3xl mb-3 opacity-90">📸</p>
+            <p class="text-[15px] font-semibold">Arrastra la captura aquí o haz clic para seleccionar</p>
+            <p class="text-[12px] mt-2 max-w-md mx-auto" style="color:var(--text-3);">Si subes varias capturas (páginas del ranking) a la vez, se tratan como un solo despacho — cada jugador se cuenta una sola vez aunque aparezca repetido (p. ej. la fila fija de tu propio personaje).</p>
+            <input type="file" id="input-archivo" accept="image/*" multiple class="hidden" />
+        </div>
+    </section>
+
+    <!-- ==================== MÓDULO A: TOP DE JUGADORES ==================== -->
+    <section class="mb-10">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <p class="text-xs text-zinc-500 uppercase tracking-wide">Fecha (UTC+0): <span id="fecha-hoy" class="text-zinc-300 mono">--</span></p>
-            <div class="flex items-center gap-2">
-                <span id="badge-caja-hoy" class="text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wide badge-caja-abierta">🟢 Caja Abierta</span>
-                <span id="contador-hoy" class="text-[10px] text-zinc-500 mono">0/50</span>
-            </div>
+            <h2 class="text-[19px] font-semibold tracking-tight">🔥 Top de jugadores</h2>
+            <button id="btn-nuevo-jugador" class="btn btn-secondary">+ Nuevo jugador</button>
         </div>
 
-        <!-- ZONA DE CARGA + ENTRADA MANUAL — split 70% / 30% de ANCHO únicamente -->
-        <div class="flex flex-col lg:flex-row gap-4 mb-6">
-            <div class="lg:w-[70%] bg-zinc-950/60 glass-panel border border-dashed border-red-900/50 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                <div class="flex-1">
-                    <p class="text-xs text-zinc-500 uppercase tracking-wider">¿Nueva entrega?</p>
-                    <p class="text-sm font-bold text-red-400 mb-2">Sube una o varias capturas</p>
-                    <select id="columna-select" class="w-full sm:w-auto bg-zinc-900 border border-zinc-700 rounded text-[11px] text-zinc-400 px-2 py-1.5">
-                        <option value="almacenamiento" selected>Columna: En almacenamiento</option>
-                        <option value="refinadores">Columna: Cargado en refinadores</option>
-                        <option value="transferido">Columna: Transferido para clasif.</option>
-                        <option value="entregado">Columna: Entregado</option>
-                    </select>
-                </div>
-                <input type="file" id="screenshot-input" accept="image/*" multiple class="w-full sm:w-auto text-xs text-zinc-500 file:mr-3 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wide file:bg-red-700 file:text-white hover:file:bg-red-600 file:cursor-pointer"/>
-            </div>
+        <div id="podio" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6"></div>
 
-            <div class="lg:w-[30%] bg-zinc-950/60 glass-panel border border-zinc-800 rounded-lg p-4">
-                <p class="text-xs text-zinc-500 uppercase tracking-wider mb-2">Registro manual</p>
-                <form id="form-manual" class="flex flex-col sm:flex-row lg:flex-col gap-2">
-                    <input type="text" id="manual-nombre" placeholder="Nombre / ID del jugador" required
-                        class="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600" />
-                    <input type="number" id="manual-cantidad" placeholder="Esencia" required
-                        class="w-full sm:w-28 lg:w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600" />
-                    <button type="submit" class="bg-red-700 hover:bg-red-600 text-white font-bold text-xs uppercase tracking-wide px-4 py-2 rounded cursor-pointer whitespace-nowrap">Registrar</button>
-                </form>
-            </div>
-        </div>
-
-        <div class="mb-6 flex flex-col sm:flex-row justify-end gap-3 flex-wrap">
-            <button id="btn-confirmar-lote-hoy" class="bg-green-800 border border-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
-                ✅ Confirmar Cambios
-            </button>
-            <button id="btn-traspaso" class="bg-zinc-950 border border-amber-800/60 hover:border-amber-500 hover:text-amber-400 text-amber-600 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
-                🔁 Traspaso de Turno
-            </button>
-            <button id="btn-reiniciar" class="bg-zinc-950 border border-zinc-800 hover:border-red-800 hover:text-red-500 text-zinc-500 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
-                🗑️ Reiniciar Día Actual
-            </button>
-            <button data-exportar="reporte-hoy" data-nombre="Reporte_Mafia_Exotic_Hoy" class="btn-exportar bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
-                📷 Descargar Reporte JPG
-            </button>
-            <button id="btn-reset-sistema" class="bg-red-950 border-2 border-red-600 hover:bg-red-800 text-red-200 font-black py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
-                🧨 Reiniciar Sistema
-            </button>
-        </div>
-
-        <div id="reporte-hoy" class="relative grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-3 sm:p-5 bg-[#050506] border border-zinc-800 rounded-xl">
-            <div class="cinta" style="top:-9px; left:24px; transform: rotate(-4deg);"></div>
-            <div class="cinta" style="top:-9px; right:24px; transform: rotate(4deg);"></div>
-
-            <div class="bg-zinc-950/70 glass-panel border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
-                <div class="flex justify-between items-center mb-3 bg-gradient-to-r from-red-950/50 to-transparent p-2 rounded gap-2">
-                    <h2 class="text-sm sm:text-lg font-black tracking-wider text-red-500 uppercase">🔥 Top 8 Contribuyentes</h2>
-                    <span class="text-[9px] sm:text-[10px] bg-red-700 text-white font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Activos</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
-                        <thead>
-                            <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
-                                <th class="py-2 pr-1">#</th><th>Jugador</th><th class="text-right">Esencia</th><th class="text-right">Viajes</th><th class="w-6"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="hoy-top8" class="divide-y divide-zinc-800/50"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="bg-zinc-950/70 glass-panel border-t-4 border-zinc-700 p-3 sm:p-4 rounded-lg shadow-xl">
-                <div class="flex justify-between items-center mb-3 bg-gradient-to-r from-zinc-900/60 to-transparent p-2 rounded gap-2">
-                    <h2 class="text-sm sm:text-lg font-black tracking-wider text-zinc-400 uppercase">💀 Otros Miembros</h2>
-                    <span class="text-[9px] sm:text-[10px] bg-zinc-700 text-zinc-200 font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Bajo Aporte</span>
-                </div>
-                <div class="overflow-x-auto max-h-[420px]">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-zinc-800 text-zinc-500 text-[9px] sm:text-[10px] tracking-widest uppercase">
-                                <th class="py-1 pr-1">#</th><th>Jugador</th><th class="text-right">Esen.</th><th class="text-right">Viajes</th><th class="w-4"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="hoy-otros" class="divide-y divide-zinc-800/40 text-[10px] sm:text-[11px]"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== VISTA 2: DÍA ANTERIOR ==================== -->
-    <div id="vista-ayer" class="vista hidden">
-        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <p class="text-xs text-zinc-500 uppercase tracking-wide">Fecha (UTC+0): <span id="fecha-ayer" class="text-zinc-300 mono">--</span></p>
-            <span class="text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wide badge-caja-cerrada">🔒 Caja Cerrada</span>
-        </div>
-        <p class="text-[11px] text-zinc-600 mb-4">Las esencias de este día ya no se pueden modificar (ni por OCR ni manual). Solo puedes marcar los <b class="text-zinc-400">viajes entregados</b> por lote o autorizar excepciones de deuda.</p>
-
-        <div class="mb-4 flex justify-end">
-            <button id="btn-confirmar-lote-ayer" class="bg-green-800 border border-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
-                ✅ Confirmar Cambios
-            </button>
-        </div>
-
-        <div class="relative grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-3 sm:p-5 bg-[#050506] border border-zinc-800 rounded-xl">
-            <div class="bg-zinc-950/70 glass-panel border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
-                <div class="flex justify-between items-center mb-3 bg-gradient-to-r from-red-950/50 to-transparent p-2 rounded gap-2">
-                    <h2 class="text-sm sm:text-lg font-black tracking-wider text-red-500 uppercase">🔥 Top 8 Contribuyentes</h2>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
-                        <thead>
-                            <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
-                                <th class="py-2 pr-1">#</th><th>Jugador</th><th class="text-right">Esencia</th><th class="text-right">Viajes</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ayer-top8" class="divide-y divide-zinc-800/50"></tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="bg-zinc-950/70 glass-panel border-t-4 border-zinc-700 p-3 sm:p-4 rounded-lg shadow-xl">
-                <div class="flex justify-between items-center mb-3 bg-gradient-to-r from-zinc-900/60 to-transparent p-2 rounded gap-2">
-                    <h2 class="text-sm sm:text-lg font-black tracking-wider text-zinc-400 uppercase">💀 Otros Miembros</h2>
-                </div>
-                <div class="overflow-x-auto max-h-[420px]">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-zinc-800 text-zinc-500 text-[9px] sm:text-[10px] tracking-widest uppercase">
-                                <th class="py-1 pr-1">#</th><th>Jugador</th><th class="text-right">Esen.</th><th class="text-right">Viajes</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ayer-otros" class="divide-y divide-zinc-800/40 text-[10px] sm:text-[11px]"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== VISTA 3: HISTÓRICO GENERAL ==================== -->
-    <div id="vista-historico" class="vista hidden">
-        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-4">Suma total histórica por jugador (solo lectura, salvo renombrado) · Top 50</p>
-        <div class="bg-zinc-950/70 glass-panel border-t-4 border-[color:var(--oro)] p-3 sm:p-4 rounded-lg shadow-xl">
+        <div class="glass-panel overflow-hidden">
             <div class="overflow-x-auto max-h-[560px]">
-                <table class="w-full text-left border-collapse text-xs sm:text-sm">
-                    <thead>
-                        <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
-                            <th class="py-2 pr-1">#</th><th>Jugador</th><th class="text-right">Esencia Total</th><th class="text-right">Rocas Totales</th>
+                <table class="w-full text-left border-collapse text-[13px]">
+                    <thead class="sticky top-0 z-10" style="background:rgba(10,10,13,0.92); backdrop-filter:blur(8px);">
+                        <tr class="eyebrow" style="border-bottom:1px solid var(--hairline);">
+                            <th class="py-2 px-2">#</th>
+                            <th class="px-2">Jugador</th>
+                            <th class="px-2">Rango</th>
+                            <th class="px-2 text-right">Esencias</th>
+                            <th class="px-2 text-right">Viajes</th>
+                            <th class="px-2 text-right">Deuda</th>
+                            <th class="px-2 text-center">Estado</th>
+                            <th class="px-2 text-center w-16">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="historico-tabla" class="divide-y divide-zinc-800/50"></tbody>
+                    <tbody id="tabla-jugadores-body" style="border-top:1px solid var(--hairline);"></tbody>
                 </table>
             </div>
+            <p id="jugadores-vacio" class="text-center text-[13px] py-8 hidden" style="color:var(--text-3);">Aún no hay jugadores registrados. Usa "+ Nuevo jugador" para empezar.</p>
         </div>
-    </div>
+    </section>
 
-    <!-- ==================== VISTA 4: DESPACHOS / LOGÍSTICA ==================== -->
-    <div id="vista-despachos" class="vista hidden">
-        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-1">Habilitados: todo jugador con ≥ 50 esencias (1 viaje o más disponible)</p>
-        <p class="text-[11px] text-zinc-600 mb-4">Cada 50 esencias genera 1 viaje disponible · Nombre dorado = cumple meta mínima de 200 esencias. <span class="pip pip-pending align-middle inline-block mx-1"></span> pendiente · <span class="pip pip-ok align-middle inline-block mx-1"></span> entregado.</p>
-
-        <div class="mb-6 flex justify-end">
-            <button data-exportar="reporte-despachos" data-nombre="Reporte_Despachos_Mafia_Exotic" class="btn-exportar bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-2 px-6 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wide">
-                📷 Descargar Reporte JPG
-            </button>
+    <!-- ==================== MÓDULO B: HISTORIAL DE DESPACHOS ==================== -->
+    <section class="mb-10">
+        <h2 class="text-[19px] font-semibold tracking-tight mb-4">📦 Historial de despachos</h2>
+        <div class="glass-panel p-4">
+            <div id="historial-lista" class="space-y-2 max-h-[420px] overflow-y-auto"></div>
+            <p id="historial-vacio" class="text-center text-[13px] py-8 hidden" style="color:var(--text-3);">Todavía no se ha procesado ningún despacho.</p>
         </div>
+    </section>
 
-        <div id="reporte-despachos" class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-3 sm:p-5 bg-[#050506] border border-zinc-800 rounded-xl">
-            <div class="bg-zinc-950/70 glass-panel border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
-                <h2 class="text-sm sm:text-base font-black tracking-wider text-red-500 uppercase mb-3">📦 Día Actual — Habilitados</h2>
-                <div id="despachos-hoy" class="space-y-2"></div>
-                <p id="despachos-hoy-vacio" class="text-xs text-zinc-600 hidden">Nadie ha llegado a las 50 esencias hoy todavía.</p>
-            </div>
-            <div class="bg-zinc-950/70 glass-panel border-t-4 border-zinc-700 p-3 sm:p-4 rounded-lg shadow-xl">
-                <h2 class="text-sm sm:text-base font-black tracking-wider text-zinc-400 uppercase mb-3">📦 Día Anterior — Habilitados</h2>
-                <div id="despachos-ayer" class="space-y-2"></div>
-                <p id="despachos-ayer-vacio" class="text-xs text-zinc-600 hidden">Nadie llegó a las 50 esencias el día anterior.</p>
-            </div>
-        </div>
-    </div>
+    <!-- ==================== CONTROLES CRÍTICOS ==================== -->
+    <section class="flex flex-col sm:flex-row justify-end gap-3 pt-6" style="border-top:1px solid var(--hairline);">
+        <button id="btn-reiniciar-temporada" class="btn btn-secondary">Reiniciar temporada</button>
+        <button id="btn-borrar-todo" class="btn btn-danger">Borrar todo</button>
+    </section>
 
-    <!-- ==================== VISTA 5: HISTORIAL DE DESPACHOS (AUDIT LOG) ==================== -->
-    <div id="vista-historial" class="vista hidden">
-        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-1">Bitácora cronológica en tiempo real de viajes confirmados</p>
-        <p class="text-[11px] text-zinc-600 mb-4">Incluye viajes normales, excepciones de deuda autorizadas y traspasos de turno. Orden: más reciente primero.</p>
-        <div class="bg-zinc-950/70 glass-panel border-t-4 border-zinc-600 p-3 sm:p-4 rounded-lg shadow-xl">
-            <div id="historial-despachos-lista" class="space-y-2 max-h-[620px] overflow-y-auto"></div>
-        </div>
-    </div>
-
-    <!-- ==================== VISTA 6: PANEL DE ANALÍTICA (solo lectura) ==================== -->
-    <div id="vista-analitica" class="vista hidden">
-        <p class="text-xs text-zinc-500 uppercase tracking-wide mb-1">Panel consultivo — no admite edición, solo lectura de estado y rankings</p>
-        <p class="text-[11px] text-zinc-600 mb-4">Viajes Disponibles = floor(Esencia Hoy / 50) − Entregados Hoy · Viajes Totales Ejecutados = histórico completo de la bitácora de despachos.</p>
-
-        <!-- Estado de viajes por jugador -->
-        <div class="bg-zinc-950/70 glass-panel border-t-4 border-[color:var(--oro)] p-3 sm:p-4 rounded-lg shadow-xl mb-6">
-            <h2 class="text-sm sm:text-base font-black tracking-wider text-[color:var(--oro)] uppercase mb-3">📊 Estado de Viajes por Jugador</h2>
-            <div class="overflow-x-auto max-h-[360px]">
-                <table class="w-full text-left border-collapse text-xs sm:text-sm">
-                    <thead>
-                        <tr class="border-b border-zinc-800 text-zinc-500 text-[10px] sm:text-[11px] tracking-widest uppercase">
-                            <th class="py-2 pr-1">Jugador</th><th class="text-right">Viajes Totales Ejecutados</th><th class="text-right">Viajes Disponibles Hoy</th>
-                        </tr>
-                    </thead>
-                    <tbody id="analitica-estado-tabla" class="divide-y divide-zinc-800/50"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Leaderboard multitemporal -->
-        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <h2 class="text-sm sm:text-base font-black tracking-wider text-red-500 uppercase">🏆 Leaderboard Multitemporal (UTC+0)</h2>
-            <button id="btn-refrescar-analitica" class="bg-zinc-950 border border-zinc-700 hover:border-red-600 hover:text-red-500 text-zinc-300 font-bold py-1.5 px-4 rounded transition-colors cursor-pointer text-[10px] uppercase tracking-wide">🔄 Recalcular semana / mes</button>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-zinc-950/70 glass-panel border-t-4 border-red-700 p-3 sm:p-4 rounded-lg shadow-xl">
-                <h3 class="text-xs font-black tracking-wider text-red-500 uppercase mb-2">Top Diario</h3>
-                <p class="text-[9px] text-zinc-600 mb-2">Fecha en curso</p>
-                <div id="analitica-top-diario" class="space-y-1"></div>
-            </div>
-            <div class="bg-zinc-950/70 glass-panel border-t-4 border-amber-600 p-3 sm:p-4 rounded-lg shadow-xl">
-                <h3 class="text-xs font-black tracking-wider text-amber-500 uppercase mb-2">Top Semanal</h3>
-                <p id="analitica-rango-semana" class="text-[9px] text-zinc-600 mb-2">Últimos 7 días</p>
-                <div id="analitica-top-semanal" class="space-y-1"></div>
-            </div>
-            <div class="bg-zinc-950/70 glass-panel border-t-4 border-zinc-500 p-3 sm:p-4 rounded-lg shadow-xl">
-                <h3 class="text-xs font-black tracking-wider text-zinc-300 uppercase mb-2">Top Mensual</h3>
-                <p id="analitica-rango-mes" class="text-[9px] text-zinc-600 mb-2">Mes en curso</p>
-                <div id="analitica-top-mensual" class="space-y-1"></div>
-            </div>
-        </div>
-    </div>
-
-    </div>
-    </div>
-    <!-- fin #vistas-track / #vistas-viewport -->
-
-    <p class="text-center text-[11px] text-zinc-700 mt-8 tracking-wide">Mafia Exotic · OneState RP — Panel interno, no oficial.</p>
+    <p class="text-center text-[11px] mt-10" style="color:var(--text-3);">Mafia Exotic · Panel interno, no oficial.</p>
 </div>
+
 </div>
+<!-- fin #app-content -->
 
 <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+    getDatabase, ref, onValue, get, set, update, remove, push
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
 // ============================================================
-// CONFIGURACIÓN DE SERVIDOR (Firebase) — PEGA TUS CREDENCIALES AQUÍ
-// Consola: https://console.firebase.google.com/
-// → Tu proyecto → Configuración del proyecto → Tus apps → SDK de Firebase
-// Copia el objeto "firebaseConfig" que te da la consola y reemplaza el de abajo.
-// Recuerda: en Realtime Database > Reglas, deja lectura/escritura abiertas
-// para pruebas, o protégelas con Firebase Auth si varias personas van a escribir.
+// CONFIGURACIÓN — proyecto de Firebase de Mafia Exotic
 // ============================================================
 const firebaseConfig = {
-      apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
-  authDomain: "mafia-exotic-app.firebaseapp.com",
-  databaseURL: "https://mafia-exotic-app-default-rtdb.firebaseio.com",
-  projectId: "mafia-exotic-app",
-  storageBucket: "mafia-exotic-app.firebasestorage.app",
-  messagingSenderId: "782184090517",
-  appId: "1:782184090517:web:873176f8131a40a6f8c49c",
-  measurementId: "G-84EN2TJP19"
+    apiKey: "AIzaSyDPNpqAc-Fsv1-C5qe_ExVFd4vZKxpOBrE",
+    authDomain: "mafia-exotic-app.firebaseapp.com",
+    databaseURL: "https://mafia-exotic-app-default-rtdb.firebaseio.com",
+    projectId: "mafia-exotic-app",
+    storageBucket: "mafia-exotic-app.firebasestorage.app",
+    messagingSenderId: "782184090517",
+    appId: "1:782184090517:web:873176f8131a40a6f8c49c",
+    measurementId: "G-84EN2TJP19"
 };
-// ============================================================
 
-const FIREBASE_LISTO = firebaseConfig.apiKey !== "TU_API_KEY_AQUI";
-// El acceso normal se valida en vivo contra /usuarios_autorizados en
-// Firebase (ver intentarLogin). Además existe una cuenta maestra fija
-// SOLO para poder probar el panel sin necesidad de desplegar/configurar
-// Firebase todavía (ver MASTER_USUARIO / MASTER_PASSWORD más abajo).
-const CLAVE_USUARIO_ACTIVO = 'usuario_activo';
+// Mínimo de esencias netas por despacho para no generar deuda.
+const REQUISITO_MINIMO_ESENCIAS = 200;
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 // ============================================================
-// CREDENCIAL MAESTRA DE PRUEBA (solo para testear sin desplegar)
-// Cambia o elimina estas constantes antes de pasar a producción.
-// ============================================================
-const MASTER_USUARIO = 'prueba';
-const MASTER_PASSWORD = 'clave';
-
-// ---------- REGLAS DE NEGOCIO (Logística) ----------
-const MAX_JUGADORES = 50;
-const ESENCIAS_POR_ROCA = 10;
-const META_MINIMA = 200;          // = 20 rocas (umbral de color "calificado")
-const ESENCIAS_POR_VIAJE = 50;    // umbral mínimo para aparecer en Despachos
-const rocasDe = (esencias) => Math.floor(esencias / ESENCIAS_POR_ROCA);
-// Viajes Disponibles = floor(Esencia Total / 50) — el descuento de "ya entregados"
-// se resta en el momento de pintar (ver filaViajes) para que el contador visible
-// siempre sea Disponibles - Entregados, nunca un valor guardado suelto.
-const viajesTotalesDe = (esencias) => Math.floor(esencias / ESENCIAS_POR_VIAJE);
-const cumpleMeta = (esencias) => esencias >= META_MINIMA;
-const habilitaDespacho = (esencias) => esencias >= ESENCIAS_POR_VIAJE;
-
-let db = null, fbFns = null;
-let refJugadoresHoy = null, refJugadoresAyer = null, refHistorico = null;
-let unsubHoy = null, unsubAyer = null, unsubHistorico = null, unsubHistorialDespachos = null;
-
-let datosHoy = [], datosAyer = [], datosHistorico = [], datosHistorialDespachos = [];
-let ocrPendiente = [];
-let vistaActual = 'hoy';
-let operatorName = null;
-
-// ---------- FECHAS (ESTRICTAMENTE UTC+0) ----------
-// Toda instancia de Date que representa un "día calendario" se construye o
-// serializa forzando el sufijo 'Z' (UTC), y toda lectura de hora usa los
-// métodos getUTC*. Esto evita saltos de día por huso horario del navegador.
-function formatoFecha(d) {
-    const yyyy = d.getUTCFullYear();
-    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(d.getUTCDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-}
-function fechaHoyStr() { return formatoFecha(new Date()); }
-function diaSiguienteStr(fechaStr) {
-    const d = new Date(fechaStr + 'T00:00:00Z');
-    d.setUTCDate(d.getUTCDate() + 1);
-    return formatoFecha(d);
-}
-function diaAnteriorAFechaStr(fechaStr) {
-    const d = new Date(fechaStr + 'T00:00:00Z');
-    d.setUTCDate(d.getUTCDate() - 1);
-    return formatoFecha(d);
-}
-
-function normalizarClave(nombre) {
-    return nombre.replace(/[.#$\[\]\/\s]+/g, '_').trim();
-}
-
-// ---------- AUDITORÍA / TRAZABILIDAD ----------
-function firmaAuditoria() {
-    return { ultimo_cambio_por: operatorName || 'Desconocido', timestamp: Date.now() };
-}
-
-async function registrarDespachoAuditoria(entry) {
-    const payload = { ...entry, operador: operatorName || 'Desconocido', timestamp: Date.now() };
-    if (modoFirebaseActivo()) {
-        await fbFns.push(fb_ref('historial_despachos'), payload);
-    } else {
-        let historial = [];
-        try { historial = JSON.parse(localStorage.getItem('historial_despachos') || '[]'); } catch (e) { historial = []; }
-        historial.unshift(payload);
-        if (historial.length > 200) historial = historial.slice(0, 200);
-        localStorage.setItem('historial_despachos', JSON.stringify(historial));
-        datosHistorialDespachos = historial;
-        renderHistorialDespachos();
-    }
-}
-
-// ============================================================
-// AUTENTICACIÓN DINÁMICA ABSOLUTA (sin contraseña maestra)
-// Los pares usuario→contraseña viven en Firebase, en:
-//   /usuarios_autorizados/{usuario}: "contraseña"
-// Ejemplo de nodo a crear manualmente en la consola de Firebase (raíz):
+// LOGIN — usuarios y contraseñas viven en Firebase, no en el código.
+// Créalos manualmente en la consola de Firebase, en la raíz:
 //   usuarios_autorizados
 //     ├── santi: "clave123"
 //     └── jhozel: "otraClave"
+// Nota de seguridad: cualquiera con la URL de la base de datos y reglas
+// de lectura abiertas podría leer este nodo directamente. Si necesitas
+// seguridad real (no solo una barrera de conveniencia), restringe
+// '/usuarios_autorizados' en las reglas de Firebase o usa Firebase
+// Authentication en su lugar.
 // ============================================================
-let dbConectado = false;
-
-// Conecta con Firebase (idempotente: si ya está conectado, no repite el import).
-// Se necesita ANTES del login (para validar credenciales) y se reutiliza
-// después del login (para suscribirse a los datos), por eso vive aparte.
-async function conectarFirebase() {
-    if (dbConectado && db) return true;
-    try {
-        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-        const fb = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
-        fbFns = fb;
-        const app = initializeApp(firebaseConfig);
-        db = fb.getDatabase(app);
-        dbConectado = true;
-        return true;
-    } catch (err) {
-        console.error('No se pudo conectar a Firebase:', err);
-        dbConectado = false;
-        return false;
-    }
-}
-
-function iniciarApp() {
-    document.getElementById('login-gate').classList.add('hidden');
-    document.getElementById('app-content').classList.remove('hidden');
-    document.getElementById('operador-actual').textContent = operatorName || '—';
-    document.getElementById('fecha-hoy').textContent = fechaHoyStr();
-
-    // El header pasa de display:none a visible justo aquí (tras el login).
-    requestAnimationFrame(() => window.dispatchEvent(new Event('mafia:app-visible')));
-
-    if (FIREBASE_LISTO) {
-        inicializarDatosFirebase();
-    } else {
-        marcarSeñal(false, 'Modo local (sin conexión)');
-        activarModoLocal();
-    }
-
-    setInterval(revisarCambioDeDia, 60000);
-}
+const CLAVE_SESION = 'mafia_exotic_usuario_activo';
+let operatorName = null;
 
 function mostrarErrorLogin(msg) {
-    const errorEl = document.getElementById('login-error');
-    errorEl.textContent = msg;
-    errorEl.classList.remove('hidden');
+    const el = document.getElementById('login-error');
+    el.textContent = msg;
+    el.classList.remove('hidden');
 }
 function ocultarErrorLogin() { document.getElementById('login-error').classList.add('hidden'); }
 
 async function intentarLogin() {
     const campoUsuario = document.getElementById('login-usuario');
     const campoPassword = document.getElementById('login-password');
-    const botonLogin = document.getElementById('login-btn');
-    // Normalización exacta pedida: minúsculas + sin espacios en los bordes.
-    const usuario = campoUsuario.value.toLowerCase().trim();
+    const boton = document.getElementById('login-btn');
+    const usuario = campoUsuario.value.trim().toLowerCase();
     const password = campoPassword.value;
 
-    if (usuario.length < 2 || !password) {
-        mostrarErrorLogin('Escribe usuario y contraseña.');
-        return;
-    }
+    if (usuario.length < 2 || !password) { mostrarErrorLogin('Escribe usuario y contraseña.'); return; }
 
-    // Acceso maestro de prueba: entra sin tocar Firebase para nada,
-    // así se puede probar la interfaz aunque aún no esté desplegada
-    // o configurada la base de datos.
-    if (usuario === MASTER_USUARIO && password === MASTER_PASSWORD) {
-        operatorName = usuario;
-        localStorage.setItem(CLAVE_USUARIO_ACTIVO, usuario);
-        ocultarErrorLogin();
-        iniciarApp();
-        return;
-    }
-
-    if (!FIREBASE_LISTO) {
-        mostrarErrorLogin('Firebase no está configurado: pega tus credenciales en el código para poder iniciar sesión.');
-        return;
-    }
-
-    botonLogin.disabled = true;
-    const textoOriginalBoton = botonLogin.textContent;
-    botonLogin.textContent = 'Verificando...';
+    boton.disabled = true;
+    const textoOriginal = boton.textContent;
+    boton.textContent = 'Verificando...';
 
     try {
-        const conectado = await conectarFirebase();
-        if (!conectado) { mostrarErrorLogin('No se pudo conectar al servidor para validar el acceso.'); return; }
-
-        // Lectura única (get, no onValue) del nodo de usuarios autorizados.
-        const snap = await fbFns.get(fb_ref('usuarios_autorizados'));
-        const usuariosAutorizados = snap.exists() ? snap.val() : {};
-
-        const existe = Object.prototype.hasOwnProperty.call(usuariosAutorizados, usuario);
-        if (existe && usuariosAutorizados[usuario] === password) {
+        const snap = await get(ref(db, 'usuarios_autorizados'));
+        const usuarios = snap.exists() ? snap.val() : {};
+        if (Object.prototype.hasOwnProperty.call(usuarios, usuario) && usuarios[usuario] === password) {
             operatorName = usuario;
-            localStorage.setItem(CLAVE_USUARIO_ACTIVO, usuario);
+            localStorage.setItem(CLAVE_SESION, usuario);
             ocultarErrorLogin();
             iniciarApp();
         } else {
-            mostrarErrorLogin('Credenciales incorrectas');
+            mostrarErrorLogin('Usuario o contraseña incorrectos.');
             campoPassword.value = '';
-            campoPassword.focus();
         }
     } catch (err) {
-        console.error('Error validando el acceso contra Firebase:', err);
-        mostrarErrorLogin('No se pudo validar el acceso, intenta de nuevo.');
+        console.error(err);
+        mostrarErrorLogin('No se pudo validar el acceso. Revisa tu conexión.');
     } finally {
-        botonLogin.disabled = false;
-        botonLogin.textContent = textoOriginalBoton;
+        boton.disabled = false;
+        boton.textContent = textoOriginal;
     }
 }
 
+function iniciarApp() {
+    document.getElementById('login-gate').classList.add('hidden');
+    document.getElementById('app-content').classList.remove('hidden');
+    document.getElementById('operador-actual').textContent = operatorName;
+    const inputLider = document.getElementById('input-lider');
+    if (inputLider && !inputLider.value) inputLider.value = operatorName;
+}
+
 document.getElementById('login-btn').addEventListener('click', intentarLogin);
-document.getElementById('login-usuario').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('login-password').focus(); });
 document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') intentarLogin(); });
+document.getElementById('login-usuario').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('login-password').focus(); });
 
 document.getElementById('btn-cerrar-sesion').addEventListener('click', () => {
-    if (!confirm('¿Cerrar sesión? Tendrás que volver a validar usuario y contraseña.')) return;
-    localStorage.removeItem(CLAVE_USUARIO_ACTIVO);
+    if (!confirm('¿Cerrar sesión?')) return;
+    localStorage.removeItem(CLAVE_SESION);
     location.reload();
 });
 
-// Persistencia de sesión en localStorage (sobrevive a cerrar el navegador,
-// a diferencia de sessionStorage). Solo se comprueba que exista un usuario
-// guardado; no se re-valida contra Firebase en cada carga.
 (function comprobarSesionExistente() {
-    const guardado = localStorage.getItem(CLAVE_USUARIO_ACTIVO);
+    const guardado = localStorage.getItem(CLAVE_SESION);
     if (guardado) {
         operatorName = guardado;
         iniciarApp();
@@ -794,1574 +515,728 @@ document.getElementById('btn-cerrar-sesion').addEventListener('click', () => {
     }
 })();
 
-// ============================================================
-// FIREBASE: suscripción de datos (rotación de día + listeners), ya con
-// sesión iniciada. Reutiliza la conexión abierta durante el login si la
-// hubo; si esta es la ruta de "sesión ya guardada", conecta aquí mismo.
-// ============================================================
-async function inicializarDatosFirebase() {
-    try {
-        const ok = await conectarFirebase();
-        if (!ok) throw new Error('Sin conexión a Firebase');
-        await rotarDiaSiCorrespondeFirebase();
-        suscribirFirebase();
-        marcarSeñal(true, 'Conectado · En vivo');
-    } catch (err) {
-        console.error('No se pudo inicializar la conexión:', err);
-        marcarSeñal(false, 'Sin conexión · modo local');
-        mostrarToast('No se pudo conectar al servidor, usando modo local', 'err');
-        activarModoLocal();
-    }
-}
+let jugadoresCache = {};
+let historicoCache = {};
+let editandoJugador = null;
+let editandoDespacho = null;
 
-// Cierra días viejos en cadena hasta llegar al día real de hoy (UTC), sumando
-// cada uno al histórico general antes de marcarlo "cerrada".
-async function rotarDiaSiCorrespondeFirebase() {
-    const hoy = fechaHoyStr();
-    const refControl = fb_ref('control/diaActivo');
-    const snap = await fbFns.get(refControl);
-
-    if (!snap.exists()) {
-        await fbFns.set(refControl, hoy);
-        await fbFns.set(fb_ref(`registros_diarios/${hoy}/estado_caja`), 'abierta');
-        return;
-    }
-
-    let diaGuardado = snap.val();
-    if (diaGuardado === hoy) return;
-
-    while (diaGuardado !== hoy) {
-        const snapViejo = await fbFns.get(fb_ref(`registros_diarios/${diaGuardado}/jugadores`));
-        const jugadoresViejo = snapViejo.exists() ? Object.values(snapViejo.val()) : [];
-
-        for (const j of jugadoresViejo) {
-            const claveHist = normalizarClave(j.name);
-            const nodoHist = fb_ref(`historico_general/${claveHist}`);
-            const snapHist = await fbFns.get(nodoHist);
-            const previo = snapHist.exists() ? (snapHist.val().crystals || 0) : 0;
-            await fbFns.set(nodoHist, { name: j.name, crystals: previo + (j.crystals || 0) });
-        }
-
-        await fbFns.set(fb_ref(`registros_diarios/${diaGuardado}/estado_caja`), 'cerrada');
-        diaGuardado = diaSiguienteStr(diaGuardado);
-    }
-
-    await fbFns.set(refControl, hoy);
-    await fbFns.set(fb_ref(`registros_diarios/${hoy}/estado_caja`), 'abierta');
-    mostrarToast('🔄 Nuevo día iniciado (UTC+0): la caja anterior quedó cerrada', 'info');
-}
-
-function fb_ref(path) { return fbFns.ref(db, path); }
-
-function suscribirFirebase() {
-    if (unsubHoy) unsubHoy();
-    if (unsubAyer) unsubAyer();
-    if (unsubHistorico) unsubHistorico();
-    if (unsubHistorialDespachos) unsubHistorialDespachos();
-
-    const hoy = fechaHoyStr();
-    const ayer = diaAnteriorAFechaStr(hoy);
-
-    refJugadoresHoy = fb_ref(`registros_diarios/${hoy}/jugadores`);
-    refJugadoresAyer = fb_ref(`registros_diarios/${ayer}/jugadores`);
-    refHistorico = fb_ref('historico_general');
-
-    document.getElementById('fecha-hoy').textContent = hoy;
-    document.getElementById('fecha-ayer').textContent = ayer;
-
-    unsubHoy = fbFns.onValue(refJugadoresHoy, (snap) => { datosHoy = coleccionDesdeSnapshot(snap.val()); renderTodo(); });
-    unsubAyer = fbFns.onValue(refJugadoresAyer, (snap) => { datosAyer = coleccionDesdeSnapshot(snap.val()); renderTodo(); });
-    unsubHistorico = fbFns.onValue(refHistorico, (snap) => { datosHistorico = coleccionDesdeSnapshot(snap.val()); renderTodo(); });
-
-    const qHistorial = fbFns.query(fb_ref('historial_despachos'), fbFns.orderByChild('timestamp'), fbFns.limitToLast(200));
-    unsubHistorialDespachos = fbFns.onValue(qHistorial, (snap) => {
-        const val = snap.val() || {};
-        datosHistorialDespachos = Object.values(val).sort((a, b) => b.timestamp - a.timestamp);
-        renderHistorialDespachos();
-    });
-}
-
-function coleccionDesdeSnapshot(val) {
-    if (!val) return [];
-    return Object.entries(val).map(([clave, j]) => ({
-        clave, name: j.name, crystals: j.crystals || 0, viajesEntregados: j.viajesEntregados || 0,
-        ultimo_cambio_por: j.ultimo_cambio_por || null, timestamp: j.timestamp || null, deudaActual: j.deudaActual || null
-    }));
-}
-
-async function revisarCambioDeDia() {
-    if (FIREBASE_LISTO && db) {
-        const hoyGuardado = document.getElementById('fecha-hoy').textContent;
-        if (hoyGuardado !== fechaHoyStr()) {
-            await rotarDiaSiCorrespondeFirebase();
-            suscribirFirebase();
-        }
-    } else {
-        const hoyGuardado = localStorage.getItem('control_dia_activo');
-        if (hoyGuardado && hoyGuardado !== fechaHoyStr()) {
-            rotarDiaSiCorrespondeLocal();
-            cargarLocal();
-            renderTodo();
-        }
-    }
-}
-
-// ============================================================
-// MODO LOCAL (respaldo mientras no hay conexión al servidor)
-// ============================================================
-function activarModoLocal() {
-    rotarDiaSiCorrespondeLocal();
-    cargarLocal();
-    renderTodo();
-}
-
-function claveDiaLocal(fecha) { return `registros_diarios_${fecha}`; }
-
-function rotarDiaSiCorrespondeLocal() {
-    const hoy = fechaHoyStr();
-    let diaGuardado = localStorage.getItem('control_dia_activo');
-
-    if (!diaGuardado) {
-        localStorage.setItem('control_dia_activo', hoy);
-        return;
-    }
-    if (diaGuardado === hoy) return;
-
-    let historico = {};
-    try { historico = JSON.parse(localStorage.getItem('historico_general') || '{}'); } catch (e) { historico = {}; }
-
-    while (diaGuardado !== hoy) {
-        let jugadoresViejo = [];
-        try { jugadoresViejo = JSON.parse(localStorage.getItem(claveDiaLocal(diaGuardado)) || '[]'); } catch (e) { jugadoresViejo = []; }
-
-        for (const j of jugadoresViejo) {
-            const clave = normalizarClave(j.name);
-            const previo = historico[clave] ? historico[clave].crystals : 0;
-            historico[clave] = { name: j.name, crystals: previo + (j.crystals || 0) };
-        }
-        diaGuardado = diaSiguienteStr(diaGuardado);
-    }
-
-    localStorage.setItem('historico_general', JSON.stringify(historico));
-    localStorage.setItem('control_dia_activo', hoy);
-    mostrarToast('🔄 Nuevo día iniciado (modo local, UTC+0): la caja anterior quedó cerrada', 'info');
-}
-
-function cargarLocal() {
-    const hoy = fechaHoyStr();
-    const ayer = diaAnteriorAFechaStr(hoy);
-    document.getElementById('fecha-hoy').textContent = hoy;
-    document.getElementById('fecha-ayer').textContent = ayer;
-
-    try { datosHoy = JSON.parse(localStorage.getItem(claveDiaLocal(hoy)) || '[]'); } catch (e) { datosHoy = []; }
-    try { datosAyer = JSON.parse(localStorage.getItem(claveDiaLocal(ayer)) || '[]'); } catch (e) { datosAyer = []; }
-    try {
-        const hist = JSON.parse(localStorage.getItem('historico_general') || '{}');
-        datosHistorico = Object.entries(hist).map(([clave, j]) => ({ clave, name: j.name, crystals: j.crystals || 0 }));
-    } catch (e) { datosHistorico = []; }
-    try { datosHistorialDespachos = JSON.parse(localStorage.getItem('historial_despachos') || '[]'); } catch (e) { datosHistorialDespachos = []; }
-    renderHistorialDespachos();
-}
-
-function guardarLocalHoy() { localStorage.setItem(claveDiaLocal(fechaHoyStr()), JSON.stringify(datosHoy)); }
-function guardarLocalAyer() { localStorage.setItem(claveDiaLocal(diaAnteriorAFechaStr(fechaHoyStr())), JSON.stringify(datosAyer)); }
-
-function modoFirebaseActivo() { return FIREBASE_LISTO && !!db; }
-
-// ============================================================
-// LÓGICA ANTI-DUPLICADOS: prevalece el valor más alto (solo Día Actual)
-// ============================================================
-async function procesarJugadorHoy(nombreCrudo, cantidad) {
-    const nombre = (nombreCrudo || '').trim();
-    if (!nombre || isNaN(cantidad)) return 'invalido';
-    const clave = normalizarClave(nombre);
-    const firma = firmaAuditoria();
-
-    if (modoFirebaseActivo()) {
-        const nodo = fbFns.child(refJugadoresHoy, clave);
-        const snap = await fbFns.get(nodo);
-        if (!snap.exists()) {
-            if (datosHoy.length >= MAX_JUGADORES) return 'limite';
-            await fbFns.set(nodo, { name: nombre, crystals: cantidad, viajesEntregados: 0, ...firma });
-            return 'nuevo';
-        }
-        const actual = snap.val();
-        if (cantidad > actual.crystals) {
-            await fbFns.set(nodo, { name: nombre, crystals: cantidad, viajesEntregados: actual.viajesEntregados || 0, ...firma });
-            return 'actualizado';
-        }
-        return 'ignorado';
-    }
-
-    const existente = datosHoy.find(p => p.clave === clave);
-    if (!existente) {
-        if (datosHoy.length >= MAX_JUGADORES) return 'limite';
-        datosHoy.push({ clave, name: nombre, crystals: cantidad, viajesEntregados: 0, ultimo_cambio_por: firma.ultimo_cambio_por, timestamp: firma.timestamp });
-        guardarLocalHoy(); renderTodo();
-        return 'nuevo';
-    }
-    if (cantidad > existente.crystals) {
-        existente.crystals = cantidad;
-        existente.ultimo_cambio_por = firma.ultimo_cambio_por;
-        existente.timestamp = firma.timestamp;
-        guardarLocalHoy(); renderTodo();
-        return 'actualizado';
-    }
-    return 'ignorado';
-}
-
-async function eliminarJugadorHoy(clave) {
-    if (modoFirebaseActivo()) {
-        await fbFns.remove(fbFns.child(refJugadoresHoy, clave));
-        return;
-    }
-    datosHoy = datosHoy.filter(p => p.clave !== clave);
-    guardarLocalHoy(); renderTodo();
-}
-
-async function reiniciarHoy() {
-    if (modoFirebaseActivo()) {
-        await fbFns.remove(refJugadoresHoy);
-        return;
-    }
-    datosHoy = [];
-    guardarLocalHoy(); renderTodo();
-}
-
-// ---------- TRASPASO DE TURNO (transacción atómica del motor temporal) ----------
-function objetoDesdeColeccion(coleccion) {
-    const obj = {};
-    coleccion.forEach(p => {
-        obj[p.clave] = {
-            name: p.name, crystals: p.crystals, viajesEntregados: p.viajesEntregados || 0,
-            ultimo_cambio_por: p.ultimo_cambio_por || null, timestamp: p.timestamp || null,
-            deudaActual: p.deudaActual || null
-        };
-    });
-    return obj;
-}
-
-async function traspasoDeTurno() {
-    const hoy = fechaHoyStr();
-    const ayer = diaAnteriorAFechaStr(hoy);
-    const firma = firmaAuditoria();
-
-    if (modoFirebaseActivo()) {
-        // 1. Clonar el Día Actual hacia el Día Anterior
-        await fbFns.set(fb_ref(`registros_diarios/${ayer}/jugadores`), objetoDesdeColeccion(datosHoy));
-        // 2. Congelar el Día Anterior (solo lectura para esencias)
-        await fbFns.set(fb_ref(`registros_diarios/${ayer}/estado_caja`), 'cerrada');
-        await fbFns.set(fb_ref(`registros_diarios/${ayer}/traspaso_por`), firma);
-        // 3. Resetear el Día Actual a cero
-        await fbFns.remove(refJugadoresHoy);
-        await fbFns.set(fb_ref(`registros_diarios/${hoy}/estado_caja`), 'abierta');
-    } else {
-        datosAyer = datosHoy.map(p => ({ ...p }));
-        guardarLocalAyer();
-        datosHoy = [];
-        guardarLocalHoy();
-        renderTodo();
-    }
-
-    await registrarDespachoAuditoria({ jugador: '— Sistema —', dia: 'sistema', tipo: 'traspaso_turno', monto: null });
-    mostrarToast('🔁 Traspaso de turno ejecutado — Día Anterior actualizado y bloqueado', 'ok');
-
-    // 4. Redirigir la vista al Día Anterior
-    const botonAyer = document.querySelector('[data-tab="ayer"]');
-    if (botonAyer) botonAyer.click();
-}
-
-// ============================================================
-// LOTE DE VIAJES — reemplaza el antiguo stepper +/- de uno en uno. El
-// operador arma un lote por jugador (input numérico, sin mutar nada
-// todavía) y lo envía con "Confirmar Cambios". Una vez confirmado, la
-// entrega queda escrita en viajesEntregados y en el historial de forma
-// IRREVERSIBLE desde la vista activa: no existe botón de deshacer
-// individual, solo "Reiniciar Sistema" puede recuperar el estado limpio.
-// ============================================================
-let loteSeleccionado = {}; // clave `${dia}-${clave}` -> cantidad pendiente de confirmar
-
-function claveLote(dia, clave) { return `${dia}-${clave}`; }
-
-function fijarCantidadLote(dia, clave, valor, maxPermitido) {
-    let v = parseInt(valor, 10);
-    if (isNaN(v) || v < 0) v = 0;
-    if (v > maxPermitido) v = maxPermitido;
-    loteSeleccionado[claveLote(dia, clave)] = v;
-    return v;
-}
-
-async function confirmarLoteDeViajes(dia) {
-    const coleccion = dia === 'hoy' ? datosHoy : datosAyer;
-    const pendientes = coleccion
-        .map(j => ({ j, cantidad: loteSeleccionado[claveLote(dia, j.clave)] || 0 }))
-        .filter(p => p.cantidad > 0);
-
-    if (pendientes.length === 0) {
-        mostrarToast('No hay viajes en el lote para confirmar', 'info');
-        return;
-    }
-
-    const totalViajes = pendientes.reduce((s, p) => s + p.cantidad, 0);
-    const resumen = pendientes.map(p => `• ${p.j.name}: ${p.cantidad} viaje(s)`).join('\n');
-    const confirmado = confirm(
-        `⚠️ CONFIRMACIÓN DE LOTE — ACCIÓN IRREVERSIBLE\n\n${resumen}\n\n` +
-        `Total del lote: ${totalViajes} viaje(s)\n\n` +
-        `Al confirmar, estos viajes quedan registrados de forma permanente en el tablero y en el historial. ` +
-        `Solo "Reiniciar Sistema" puede revertir este estado.\n\n¿Confirmas el envío bajo la responsabilidad de "${operatorName}"?`
-    );
-    if (!confirmado) return;
-
-    const refBase = dia === 'hoy' ? refJugadoresHoy : refJugadoresAyer;
-    for (const p of pendientes) {
-        const totales = viajesTotalesDe(p.j.crystals);
-        const nuevoEntregado = Math.min(totales, (p.j.viajesEntregados || 0) + p.cantidad);
-        const firma = firmaAuditoria();
-
-        if (modoFirebaseActivo()) {
-            await fbFns.update(fbFns.child(refBase, p.j.clave), { viajesEntregados: nuevoEntregado, ...firma });
-        } else {
-            p.j.viajesEntregados = nuevoEntregado;
-            p.j.ultimo_cambio_por = firma.ultimo_cambio_por;
-            p.j.timestamp = firma.timestamp;
-        }
-
-        await registrarDespachoAuditoria({ jugador: p.j.name, dia, tipo: 'lote', monto: p.cantidad });
-        delete loteSeleccionado[claveLote(dia, p.j.clave)];
-    }
-
-    if (!modoFirebaseActivo()) {
-        dia === 'hoy' ? guardarLocalHoy() : guardarLocalAyer();
-        renderTodo();
-    }
-
-    // El re-render (local inmediato, o vía onValue de Firebase) recalcula el
-    // "Estado Remanente": el nuevo máximo interactivo ya sale de
-    // totales - viajesEntregados actualizado, mostrado como R/R.
-    requestAnimationFrame(() => {
-        pendientes.forEach(p => {
-            const el = document.querySelector(`[data-restantes-de="${claveLote(dia, p.j.clave)}"]`);
-            if (el) { el.classList.remove('flash-num'); void el.offsetWidth; el.classList.add('flash-num'); }
-        });
-    });
-
-    mostrarToast(`✅ Lote confirmado: ${totalViajes} viaje(s) registrados de forma irreversible`, 'ok');
-}
-
-// ---------- EXCEPCIÓN DE DEUDA: viaje manual para quien no llega a la meta ----------
-async function autorizarViajeManual(dia, clave) {
-    const coleccion = dia === 'hoy' ? datosHoy : datosAyer;
-    const jugador = coleccion.find(p => p.clave === clave);
-    if (!jugador) return;
-    if (cumpleMeta(jugador.crystals)) {
-        mostrarToast('Este jugador ya cumple la meta, usa el contador normal de viajes', 'info');
-        return;
-    }
-
-    const deuda = META_MINIMA - jugador.crystals;
-    const confirmado = confirm(
-        `⚠️ AUTORIZACIÓN DE EXCEPCIÓN\n\n` +
-        `Jugador: ${jugador.name}\n` +
-        `Esencias actuales: ${jugador.crystals}\n` +
-        `Deuda generada: ${deuda} esencias\n\n` +
-        `¿Autorizar este viaje manual bajo la responsabilidad de "${operatorName}"?`
-    );
-    if (!confirmado) return;
-
-    const nuevoConteo = (jugador.viajesEntregados || 0) + 1;
-    const firma = firmaAuditoria();
-    const payload = { viajesEntregados: nuevoConteo, deudaActual: deuda, ...firma };
-
-    if (modoFirebaseActivo()) {
-        const refBase = dia === 'hoy' ? refJugadoresHoy : refJugadoresAyer;
-        await fbFns.update(fbFns.child(refBase, clave), payload);
-    } else {
-        jugador.viajesEntregados = nuevoConteo;
-        jugador.deudaActual = deuda;
-        jugador.ultimo_cambio_por = firma.ultimo_cambio_por;
-        jugador.timestamp = firma.timestamp;
-        dia === 'hoy' ? guardarLocalHoy() : guardarLocalAyer();
-        renderTodo();
-    }
-
-    await registrarDespachoAuditoria({ jugador: jugador.name, dia, tipo: 'manual_deuda', monto: deuda });
-    mostrarToast(`⚠️ Viaje manual autorizado — deuda inyectada: ${deuda} esencias`, 'err');
-}
-
-// ---------- MUTACIÓN HISTÓRICA: renombrar sin perder el nodo ----------
-async function renombrarHistorico(clave, nuevoNombre) {
-    const firma = firmaAuditoria();
-    if (modoFirebaseActivo()) {
-        await fbFns.update(fb_ref(`historico_general/${clave}`), { name: nuevoNombre, ultimo_cambio_por: firma.ultimo_cambio_por, timestamp: firma.timestamp });
-    } else {
-        let historico = {};
-        try { historico = JSON.parse(localStorage.getItem('historico_general') || '{}'); } catch (e) { historico = {}; }
-        if (historico[clave]) {
-            historico[clave].name = nuevoNombre;
-            historico[clave].ultimo_cambio_por = firma.ultimo_cambio_por;
-            historico[clave].timestamp = firma.timestamp;
-            localStorage.setItem('historico_general', JSON.stringify(historico));
-        }
-        cargarLocal(); renderTodo();
-    }
-    mostrarToast(`✎ Nickname actualizado a "${nuevoNombre}" (historial conservado)`, 'ok');
-}
-
-// ---------- SEÑAL EN VIVO Y RELOJ (UTC+0 estricto) ----------
-function marcarSeñal(activa, texto) {
-    document.getElementById('punto-señal').classList.toggle('offline', !activa);
-    document.getElementById('texto-señal').textContent = texto;
-}
-function actualizarReloj() {
-    const ahora = new Date();
-    const hh = String(ahora.getUTCHours()).padStart(2, '0');
-    const mm = String(ahora.getUTCMinutes()).padStart(2, '0');
-    const ss = String(ahora.getUTCSeconds()).padStart(2, '0');
-    const dd = String(ahora.getUTCDate()).padStart(2, '0');
-    const mo = String(ahora.getUTCMonth() + 1).padStart(2, '0');
-    const yy = ahora.getUTCFullYear();
-    document.getElementById('reloj').textContent = `${hh}:${mm}:${ss} UTC · ${dd}/${mo}/${yy}`;
-}
-setInterval(actualizarReloj, 1000);
-actualizarReloj();
-
-// ---------- PESTAÑAS (ROUTER SPA — track horizontal con translate3d, 0 reflow) ----------
-const ORDEN_PESTAÑAS = ['hoy', 'ayer', 'historico', 'despachos', 'historial', 'analitica'];
-const pistaVistas = document.getElementById('vistas-track');
-
-// Todas las subpáginas quedan visibles en el DOM (sin display:none) desde el
-// arranque: solo la posición del track decide qué se ve. Se limpia la clase
-// 'hidden' heredada del markup para que el layout se calcule una sola vez.
-document.querySelectorAll('#vistas-track > .vista').forEach(v => v.classList.remove('hidden'));
-
-function moverTrackA(indice) {
-    // translate3d fuerza la capa en su propio compositor layer (GPU); el
-    // porcentaje es relativo al ancho del propio track (600%), por lo que
-    // cada paso de índice desplaza exactamente un viewport completo.
-    pistaVistas.style.transform = `translate3d(-${indice * (100 / ORDEN_PESTAÑAS.length)}%, 0, 0)`;
-}
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        vistaActual = btn.dataset.tab;
-        const indice = ORDEN_PESTAÑAS.indexOf(vistaActual);
-        if (indice === -1) return;
-
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-activo'));
-        btn.classList.add('tab-activo');
-        moverTrackA(indice);
-
-        if (vistaActual === 'analitica') actualizarAnalitica();
-    });
+// ---------- SEÑAL DE CONEXIÓN ----------
+onValue(ref(db, '.info/connected'), (snap) => {
+    const conectado = snap.val() === true;
+    document.getElementById('punto-señal').className = 'w-2 h-2 rounded-full ' + (conectado ? 'bg-green-500' : 'bg-zinc-600');
+    document.getElementById('texto-señal').textContent = conectado ? 'Conectado · En vivo' : 'Sin conexión';
 });
-
-// ============================================================
-// RENDER — Motor "atómico": todo el HTML de cada tabla se arma en un
-// arreglo de strings en memoria y se inyecta con UNA sola asignación a
-// innerHTML por sección. Nunca se usa += dentro de un bucle sobre el DOM
-// real (eso fuerza un reflow/reparse en cada iteración y es la causa
-// principal del lag reportado).
-// ============================================================
-function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-function renderTodo() {
-    renderDia('hoy', datosHoy, 'hoy-top8', 'hoy-otros', true);
-    renderDia('ayer', datosAyer, 'ayer-top8', 'ayer-otros', false);
-    renderHistorico();
-    renderDespachos();
-    renderAnaliticaEstado();
-    renderLeaderboardBloque('analitica-top-diario', mapaDesdeColeccion(datosHoy));
-    document.getElementById('contador-hoy').textContent = `${datosHoy.length}/${MAX_JUGADORES}`;
-}
-
-// ============================================================
-// PANEL DE ANALÍTICA (6ta subpágina) — estrictamente consultivo, no muta
-// ningún dato. La parte "Estado" y "Top Diario" es en vivo (se recalcula en
-// cada renderTodo, sin fetch extra: usa lo que ya está en memoria). Los
-// leaderboards Semanal/Mensual sí requieren leer días pasados, por eso se
-// calculan bajo demanda (al abrir la pestaña o pulsar "Recalcular").
-// ============================================================
-function calcularTotalesEjecutadosPorJugador() {
-    const mapa = new Map();
-    for (const entry of datosHistorialDespachos) {
-        let cantidad = 0;
-        if (entry.tipo === 'normal' || entry.tipo === 'manual_deuda') cantidad = 1;
-        else if (entry.tipo === 'lote') cantidad = entry.monto || 0;
-        else continue;
-        const nombre = entry.jugador || '—';
-        mapa.set(nombre, (mapa.get(nombre) || 0) + cantidad);
-    }
-    return mapa;
-}
-
-function renderAnaliticaEstado() {
-    const tbody = document.getElementById('analitica-estado-tabla');
-    if (!tbody) return;
-    const ejecutados = calcularTotalesEjecutadosPorJugador();
-    const nombres = new Map();
-    [...datosHoy, ...datosAyer].forEach(j => { if (!nombres.has(j.name)) nombres.set(j.name, j); });
-
-    const filas = Array.from(nombres.values())
-        .sort((a, b) => b.crystals - a.crystals)
-        .map(j => {
-            const disponibles = Math.max(0, viajesTotalesDe(j.crystals) - (j.viajesEntregados || 0));
-            const totalEjec = ejecutados.get(j.name) || 0;
-            return `
-                <tr class="hover:bg-zinc-800/30 transition-colors">
-                    <td class="py-2 pr-1 font-bold">${escapeHTML(j.name)}</td>
-                    <td class="text-right text-zinc-300">${totalEjec}</td>
-                    <td class="text-right text-zinc-300">${disponibles}</td>
-                </tr>`;
-        });
-
-    tbody.innerHTML = filas.length
-        ? filas.join('')
-        : `<tr><td colspan="3" class="py-6 text-center text-zinc-700 text-xs">Sin actividad reciente.</td></tr>`;
-}
-
-function mapaDesdeColeccion(coleccion) {
-    const mapa = new Map();
-    coleccion.forEach(j => mapa.set(j.name, (mapa.get(j.name) || 0) + (j.crystals || 0)));
-    return mapa;
-}
-
-function renderLeaderboardBloque(contenedorId, mapaEsencias, top = 8) {
-    const cont = document.getElementById(contenedorId);
-    if (!cont) return;
-    const ordenado = Array.from(mapaEsencias.entries()).sort((a, b) => b[1] - a[1]).slice(0, top);
-    cont.innerHTML = ordenado.length
-        ? ordenado.map(([nombre, esencia], i) => `
-            <div class="flex items-center justify-between text-[11px] gap-2">
-                <span class="text-zinc-400 truncate">#${i + 1} ${escapeHTML(nombre)}</span>
-                <span class="font-bold text-zinc-200 mono">${esencia.toLocaleString()}</span>
-            </div>`).join('')
-        : `<p class="text-[10px] text-zinc-700">Sin datos en este rango.</p>`;
-}
-
-// Suma esencias por jugador en un rango cerrado [inicio, fin] (UTC+0). Lee
-// los nodos diarios que YA existen (registros_diarios/{fecha} en Firebase, o
-// su equivalente en localStorage) — rotarDiaSiCorresponde() nunca los borra,
-// solo los marca "cerrada" y los suma al histórico, así que siguen
-// disponibles para reconstruir ventanas de 7/30 días sin tocar el esquema.
-async function sumarRangoFechas(fechaInicioStr, fechaFinStr) {
-    const fechas = [];
-    let cursor = fechaInicioStr;
-    while (cursor <= fechaFinStr) { fechas.push(cursor); cursor = diaSiguienteStr(cursor); }
-
-    const mapa = new Map();
-    if (modoFirebaseActivo()) {
-        const snaps = await Promise.all(fechas.map(f => fbFns.get(fb_ref(`registros_diarios/${f}/jugadores`))));
-        snaps.forEach(snap => {
-            if (!snap.exists()) return;
-            Object.values(snap.val()).forEach(j => mapa.set(j.name, (mapa.get(j.name) || 0) + (j.crystals || 0)));
-        });
-    } else {
-        fechas.forEach(f => {
-            let jugadores = [];
-            try { jugadores = JSON.parse(localStorage.getItem(claveDiaLocal(f)) || '[]'); } catch (e) { jugadores = []; }
-            jugadores.forEach(j => mapa.set(j.name, (mapa.get(j.name) || 0) + (j.crystals || 0)));
-        });
-    }
-    return mapa;
-}
-
-let analiticaCargando = false;
-async function actualizarAnalitica() {
-    renderAnaliticaEstado();
-    renderLeaderboardBloque('analitica-top-diario', mapaDesdeColeccion(datosHoy));
-
-    if (analiticaCargando) return;
-    analiticaCargando = true;
-    const btn = document.getElementById('btn-refrescar-analitica');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Calculando...'; }
-
-    try {
-        const hoy = fechaHoyStr();
-
-        let inicioSemana = hoy;
-        for (let i = 0; i < 6; i++) inicioSemana = diaAnteriorAFechaStr(inicioSemana);
-        const mapaSemana = await sumarRangoFechas(inicioSemana, hoy);
-        renderLeaderboardBloque('analitica-top-semanal', mapaSemana);
-        document.getElementById('analitica-rango-semana').textContent = `${inicioSemana} → ${hoy}`;
-
-        const inicioMes = hoy.slice(0, 7) + '-01';
-        const mapaMes = await sumarRangoFechas(inicioMes, hoy);
-        renderLeaderboardBloque('analitica-top-mensual', mapaMes);
-        document.getElementById('analitica-rango-mes').textContent = `${inicioMes} → ${hoy}`;
-    } catch (err) {
-        console.error('Error calculando leaderboard multitemporal:', err);
-        mostrarToast('No se pudo calcular el ranking semanal/mensual', 'err');
-    } finally {
-        analiticaCargando = false;
-        if (btn) { btn.disabled = false; btn.textContent = '🔄 Recalcular semana / mes'; }
-    }
-}
-
-document.getElementById('btn-refrescar-analitica').addEventListener('click', actualizarAnalitica);
-
-function subrayaAuditoria(j) {
-    let out = '';
-    if (j.ultimo_cambio_por) out += `<span class="block text-zinc-700 text-[9px] font-normal normal-case">✎ ${escapeHTML(j.ultimo_cambio_por)}</span>`;
-    if (j.deudaActual) out += `<span class="block text-red-700 text-[9px] font-bold normal-case">Deuda: ${j.deudaActual}</span>`;
-    return out;
-}
-
-// Clase de color del NOMBRE según jerarquía visual:
-// MVP absoluto (posición #1 con esencia > 0) > Calificado (>=200) > No calificado
-function claseNombre(esMvp, esencias) {
-    if (esMvp && esencias > 0) return 'txt-mvp';
-    return cumpleMeta(esencias) ? 'txt-calificado' : 'txt-no-calificado';
-}
-
-function filaViajes(dia, jugador) {
-    const totales = viajesTotalesDe(jugador.crystals);
-    const entregados = jugador.viajesEntregados || 0;
-    const restantes = Math.max(0, totales - entregados);
-    const key = claveLote(dia, jugador.clave);
-
-    if (totales === 0) {
-        return `
-            <div class="flex flex-col items-end gap-0.5">
-                <span class="text-zinc-700 text-[10px]">—</span>
-                <button class="text-[8px] sm:text-[9px] text-amber-600 hover:text-amber-400 uppercase tracking-wide cursor-pointer btn-viaje-manual whitespace-nowrap" data-dia="${dia}" data-clave="${jugador.clave}">⚠️ Autorizar (deudor)</button>
-            </div>`;
-    }
-    if (restantes === 0) {
-        return `<span class="mono text-[10px] sm:text-xs text-zinc-600" data-restantes-de="${key}">Completo</span>`;
-    }
-
-    const pendiente = loteSeleccionado[key] || 0;
-    // Estado Remanente: el "máximo" mostrado SIEMPRE se recalcula sobre lo
-    // que queda por entregar (restantes), no sobre el total histórico — así
-    // tras cada commit el contador vuelve a nacer como R/R (ej. 6/6 → tras
-    // procesar 2 → 4/4), reflejando fijamente el nuevo límite real.
-    return `
-        <div class="flex flex-col items-end gap-1" title="Restantes por entregar: ${restantes}">
-            <span class="mono text-[10px] sm:text-xs viajes-num" data-restantes-de="${key}">${restantes}/${restantes}</span>
-            <input type="number" min="0" max="${restantes}" step="1" value="${pendiente}"
-                data-dia="${dia}" data-clave="${jugador.clave}" data-max="${restantes}"
-                class="input-lote w-14 bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5 text-[10px] sm:text-[11px] text-center text-zinc-200 focus:border-amber-600 outline-none"
-                placeholder="0" />
-        </div>`;
-}
-
-function renderDia(dia, datos, idTop, idOtros, permiteBorrar) {
-    const ordenado = [...datos].sort((a, b) => b.crystals - a.crystals);
-    const top = document.getElementById(idTop);
-    const otros = document.getElementById(idOtros);
-
-    const filasTop = [];
-    const filasOtros = [];
-
-    for (let i = 0; i < 8; i++) {
-        if (!ordenado[i]) break;
-        const j = ordenado[i];
-        const esMvp = i === 0;
-        const rocas = rocasDe(j.crystals);
-        const calif = cumpleMeta(j.crystals);
-        const clsNombre = claseNombre(esMvp, j.crystals);
-        filasTop.push(`
-            <tr class="hover:bg-zinc-800/30 transition-colors ${esMvp && j.crystals > 0 ? 'fila-mvp' : (esMvp ? 'fila-oro' : '')}">
-                <td class="py-3 pr-1 font-bold ${esMvp ? 'text-[color:var(--oro-mvp)]' : 'text-red-500'}">#${i + 1}</td>
-                <td class="font-bold ${clsNombre}">${esMvp && j.crystals > 0 ? '👑 ' : ''}${escapeHTML(j.name)}${subrayaAuditoria(j)}</td>
-                <td class="text-right whitespace-nowrap">
-                    <span class="font-black text-zinc-300">${j.crystals.toLocaleString()}</span>
-                    <span class="block text-[9px] ${calif ? 'text-zinc-500' : 'text-red-800'}">${rocas} rocas${calif ? '' : ' · no califica'}</span>
-                </td>
-                <td class="text-right">${filaViajes(dia, j)}</td>
-                <td class="text-right">${permiteBorrar ? `<button data-clave="${j.clave}" class="btn-borrar text-zinc-600 hover:text-red-500 text-xs cursor-pointer" title="Borrar">✖</button>` : ''}</td>
-            </tr>`);
-    }
-
-    for (let i = 8; i < ordenado.length; i++) {
-        const j = ordenado[i];
-        const clsNombre = claseNombre(false, j.crystals);
-        filasOtros.push(`
-            <tr class="hover:bg-zinc-800/30 transition-colors fila-compacta">
-                <td class="py-1 pr-1 font-bold text-zinc-600">#${i + 1}</td>
-                <td class="${clsNombre}">${escapeHTML(j.name)}${subrayaAuditoria(j)}</td>
-                <td class="text-right font-bold text-zinc-500">${j.crystals.toLocaleString()}</td>
-                <td class="text-right">${filaViajes(dia, j)}</td>
-                <td class="text-right">${permiteBorrar ? `<button data-clave="${j.clave}" class="btn-borrar text-zinc-700 hover:text-red-500 text-[10px] cursor-pointer" title="Borrar">✖</button>` : ''}</td>
-            </tr>`);
-    }
-
-    // Inyección atómica: una sola escritura al DOM por tabla, no una por fila.
-    top.innerHTML = filasTop.join('');
-    otros.innerHTML = filasOtros.join('');
-
-    if (permiteBorrar) {
-        [...top.querySelectorAll('.btn-borrar'), ...otros.querySelectorAll('.btn-borrar')].forEach(btn => {
-            btn.addEventListener('click', () => {
-                const clave = btn.getAttribute('data-clave');
-                const jugador = datos.find(p => p.clave === clave);
-                if (!confirm(`¿Quitar a "${jugador ? jugador.name : clave}" del día actual?`)) return;
-                eliminarJugadorHoy(clave).then(() => mostrarToast('Jugador eliminado del día actual', 'info'));
-            });
-        });
-    }
-
-    // El input de lote NUNCA muta datos al escribir: solo actualiza
-    // loteSeleccionado en memoria. La escritura real (irreversible) solo
-    // ocurre al pulsar "✅ Confirmar Cambios" (confirmarLoteDeViajes).
-    [...top.querySelectorAll('.input-lote'), ...otros.querySelectorAll('.input-lote')].forEach(inp => {
-        inp.addEventListener('input', () => {
-            const d = inp.getAttribute('data-dia');
-            const clave = inp.getAttribute('data-clave');
-            const max = parseInt(inp.getAttribute('data-max'), 10);
-            const v = fijarCantidadLote(d, clave, inp.value, max);
-            inp.value = v;
-        });
-    });
-
-    [...top.querySelectorAll('.btn-viaje-manual'), ...otros.querySelectorAll('.btn-viaje-manual')].forEach(btn => {
-        btn.addEventListener('click', () => {
-            autorizarViajeManual(btn.getAttribute('data-dia'), btn.getAttribute('data-clave'));
-        });
-    });
-}
-
-function renderHistorico() {
-    const cuerpo = document.getElementById('historico-tabla');
-    const ordenado = [...datosHistorico].sort((a, b) => b.crystals - a.crystals).slice(0, 50);
-    const filas = [];
-
-    ordenado.forEach((j, i) => {
-        filas.push(`
-            <tr class="hover:bg-zinc-800/30 transition-colors ${i === 0 ? 'fila-oro' : ''}">
-                <td class="py-2 pr-1 font-bold ${i === 0 ? 'text-[color:var(--oro)]' : 'text-zinc-500'}">#${i + 1}</td>
-                <td class="font-bold">${i === 0 ? '👑 ' : ''}${escapeHTML(j.name)} <button class="btn-renombrar text-zinc-600 hover:text-amber-400 text-[10px] ml-1 cursor-pointer" data-clave="${j.clave}" title="Renombrar">✎</button>${subrayaAuditoria(j)}</td>
-                <td class="text-right font-black text-zinc-300">${j.crystals.toLocaleString()}</td>
-                <td class="text-right text-zinc-500">${rocasDe(j.crystals).toLocaleString()}</td>
-            </tr>`);
-    });
-
-    cuerpo.innerHTML = filas.length
-        ? filas.join('')
-        : `<tr><td colspan="4" class="py-6 text-center text-zinc-700 text-xs">Aún no hay historial acumulado.</td></tr>`;
-
-    cuerpo.querySelectorAll('.btn-renombrar').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const clave = btn.getAttribute('data-clave');
-            const jugador = datosHistorico.find(p => p.clave === clave);
-            if (!jugador) return;
-            const nuevo = prompt(`Nuevo nickname para "${jugador.name}" (se conserva su historial):`, jugador.name);
-            if (!nuevo || !nuevo.trim() || nuevo.trim() === jugador.name) return;
-            renombrarHistorico(clave, nuevo.trim());
-        });
-    });
-}
-
-// Pips visuales de despacho: cuadrados blancos translúcidos = pendiente,
-// verdes con glow = entregado. Sustituye a los emoji para un acabado más
-// premium y consistente entre plataformas.
-function pipsDeViajes(totales, entregados) {
-    if (totales === 0) return '<span class="text-zinc-700 text-[10px]">— sin viajes —</span>';
-    const spans = [];
-    for (let i = 0; i < totales; i++) {
-        spans.push(`<span class="pip ${i < entregados ? 'pip-ok' : 'pip-pending'}"></span>`);
-    }
-    return `<div class="flex gap-1 flex-wrap justify-end">${spans.join('')}</div>`;
-}
-
-function renderDespachos() {
-    const contHoy = document.getElementById('despachos-hoy');
-    const contAyer = document.getElementById('despachos-ayer');
-
-    // Habilita a TODO jugador con >= 50 esencias (1 viaje o más), no solo a
-    // quienes cumplen la meta de 200. El color del nombre sigue indicando
-    // si además cumple la meta mínima.
-    const califHoy = [...datosHoy].filter(j => habilitaDespacho(j.crystals)).sort((a, b) => b.crystals - a.crystals);
-    const califAyer = [...datosAyer].filter(j => habilitaDespacho(j.crystals)).sort((a, b) => b.crystals - a.crystals);
-
-    document.getElementById('despachos-hoy-vacio').classList.toggle('hidden', califHoy.length > 0);
-    document.getElementById('despachos-ayer-vacio').classList.toggle('hidden', califAyer.length > 0);
-
-    const tarjeta = (j) => {
-        const totales = viajesTotalesDe(j.crystals);
-        const entregados = j.viajesEntregados || 0;
-        const clsNombre = claseNombre(false, j.crystals);
-        return `
-            <div class="bg-zinc-900/60 border border-zinc-800 rounded-lg px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                    <p class="font-bold text-sm ${clsNombre}">${escapeHTML(j.name)}</p>
-                    <p class="text-[10px] text-zinc-500">${j.crystals.toLocaleString()} esencia · ${rocasDe(j.crystals)} rocas</p>
-                    ${j.ultimo_cambio_por ? `<p class="text-zinc-700 text-[9px]">✎ ${escapeHTML(j.ultimo_cambio_por)}</p>` : ''}
-                </div>
-                <div class="text-right">
-                    ${pipsDeViajes(totales, entregados)}
-                    <p class="text-[9px] text-zinc-600 mono mt-1">${entregados}/${totales} viajes</p>
-                </div>
-            </div>`;
-    };
-
-    contHoy.innerHTML = califHoy.map(tarjeta).join('');
-    contAyer.innerHTML = califAyer.map(tarjeta).join('');
-}
-
-function renderHistorialDespachos() {
-    const cont = document.getElementById('historial-despachos-lista');
-    if (!cont) return;
-
-    if (datosHistorialDespachos.length === 0) {
-        cont.innerHTML = `<p class="text-xs text-zinc-600 text-center py-6">Aún no hay viajes registrados en el historial.</p>`;
-        return;
-    }
-
-    const filas = datosHistorialDespachos.map(entry => {
-        const fecha = new Date(entry.timestamp);
-        const fechaStr = isNaN(fecha.getTime()) ? '--' : fecha.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
-        let badge;
-        if (entry.tipo === 'manual_deuda') {
-            badge = `<span class="text-[9px] bg-red-900 text-red-200 px-2 py-0.5 rounded uppercase font-black whitespace-nowrap">Deuda ${entry.monto}</span>`;
-        } else if (entry.tipo === 'traspaso_turno') {
-            badge = `<span class="text-[9px] bg-amber-800 text-amber-200 px-2 py-0.5 rounded uppercase font-black whitespace-nowrap">Traspaso de Turno</span>`;
-        } else if (entry.tipo === 'lote') {
-            badge = `<span class="text-[9px] bg-emerald-900 text-emerald-200 px-2 py-0.5 rounded uppercase font-black whitespace-nowrap">Lote ×${entry.monto}</span>`;
-        } else if (entry.tipo === 'reinicio_total') {
-            badge = `<span class="text-[9px] bg-red-700 text-red-50 px-2 py-0.5 rounded uppercase font-black whitespace-nowrap">🧨 Reinicio Total</span>`;
-        } else {
-            badge = `<span class="text-[9px] bg-green-900 text-green-200 px-2 py-0.5 rounded uppercase font-black whitespace-nowrap">Viaje Normal</span>`;
-        }
-        return `
-            <div class="flex items-center justify-between gap-3 bg-zinc-950/60 glass-panel border border-zinc-800 rounded px-3 py-2 flex-wrap">
-                <div class="min-w-0">
-                    <p class="text-xs sm:text-sm font-bold text-zinc-200 truncate">${escapeHTML(entry.jugador || '—')}</p>
-                    <p class="text-[10px] text-zinc-600 mono">${fechaStr} · día: ${escapeHTML(entry.dia || '—')}</p>
-                </div>
-                <div class="text-right shrink-0">
-                    ${badge}
-                    <p class="text-[9px] text-zinc-700 mt-1">✎ ${escapeHTML(entry.operador || '—')}</p>
-                </div>
-            </div>`;
-    });
-
-    cont.innerHTML = filas.join('');
-}
 
 // ---------- TOASTS ----------
-let toastTimer = null;
-function mostrarToast(msg, tipo) {
-    const toast = document.getElementById('toast');
-    toast.textContent = msg;
-    toast.className = 'toast show ' + (tipo || 'info');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { toast.className = 'toast ' + (tipo || 'info'); }, 3800);
+let toastTimeout = null;
+function mostrarToast(mensaje, tipo = 'info') {
+    const el = document.getElementById('toast');
+    el.textContent = mensaje;
+    el.className = `toast show ${tipo}`;
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => el.classList.remove('show'), 3800);
 }
 
-// ---------- EXPORTAR JPG (reutilizable para cualquier contenedor) ----------
-document.querySelectorAll('.btn-exportar').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const contenedorId = btn.getAttribute('data-exportar');
-        const nombreArchivo = btn.getAttribute('data-nombre') || 'Reporte_Mafia_Exotic';
-        const node = document.getElementById(contenedorId);
-        const botonesOcultar = node.querySelectorAll('.btn-borrar, .input-lote, .btn-viaje-manual, .btn-renombrar');
-        botonesOcultar.forEach(b => b.style.visibility = 'hidden');
-
-        html2canvas(node, { backgroundColor: '#050506' }).then(canvas => {
-            botonesOcultar.forEach(b => b.style.visibility = '');
-            const link = document.createElement('a');
-            link.download = `${nombreArchivo}.jpg`;
-            link.href = canvas.toDataURL('image/jpeg');
-            link.click();
-        }).catch(err => {
-            botonesOcultar.forEach(b => b.style.visibility = '');
-            console.error('Error al exportar JPG:', err);
-            mostrarToast('No se pudo generar el JPG, revisa la consola', 'err');
-        });
-    });
-});
-
-// ---------- TRASPASO DE TURNO (botón) ----------
-document.getElementById('btn-traspaso').addEventListener('click', async () => {
-    if (!confirm('¿Ejecutar Traspaso de Turno?\n\nEsto archivará el Día Actual como Día Anterior (quedará bloqueado para esencias) y reiniciará el Día Actual a cero. Esta acción no se puede deshacer.')) return;
-    await traspasoDeTurno();
-});
-
-// ---------- REINICIAR DÍA ACTUAL ----------
-document.getElementById('btn-reiniciar').addEventListener('click', async () => {
-    if (!confirm('¿Seguro que quieres borrar TODO el registro del día actual? El histórico y el día anterior no se ven afectados.')) return;
-    await reiniciarHoy();
-    mostrarToast('Día actual reiniciado', 'info');
-});
-
-// ---------- CONFIRMAR LOTE DE VIAJES (Día Actual / Día Anterior) ----------
-document.getElementById('btn-confirmar-lote-hoy').addEventListener('click', () => confirmarLoteDeViajes('hoy'));
-document.getElementById('btn-confirmar-lote-ayer').addEventListener('click', () => confirmarLoteDeViajes('ayer'));
-
-// ============================================================
-// REINICIAR SISTEMA — purga absoluta, doble confirmación obligatoria.
-// Borra Día Actual, Día Anterior, Histórico General e Historial de
-// Despachos (Firebase y/o localStorage). Conserva deliberadamente la
-// clave de sesión (CLAVE_USUARIO_ACTIVO) para no forzar un nuevo login,
-// y NUNCA toca /usuarios_autorizados (las credenciales
-// de acceso no son parte de los datos operativos que este botón purga).
-// ============================================================
-async function reiniciarSistemaCompleto() {
-    const primerAviso = confirm(
-        '🧨 REINICIO TOTAL DEL SISTEMA\n\n' +
-        'Esto borra PERMANENTEMENTE: Día Actual, Día Anterior, Histórico General ' +
-        'e Historial de Despachos completo.\n\n' +
-        'Esta acción es IRREVERSIBLE. ¿Deseas continuar?'
-    );
-    if (!primerAviso) return;
-
-    const segundoAviso = confirm(
-        `⚠️ CONFIRMACIÓN FINAL — Operador: "${operatorName}"\n\n` +
-        'Esta es tu última oportunidad de cancelar antes de purgar todo el ' +
-        'estado de la aplicación.\n\n¿Ejecutar el reinicio total AHORA?'
-    );
-    if (!segundoAviso) return;
-
-    try {
-        if (modoFirebaseActivo()) {
-            await Promise.all([
-                fbFns.remove(refJugadoresHoy),
-                fbFns.remove(refJugadoresAyer),
-                fbFns.remove(refHistorico),
-                fbFns.remove(fb_ref('historial_despachos'))
-            ]);
-        }
-
-        // Purga de localStorage: se excluye deliberadamente CLAVE_USUARIO_ACTIVO
-        // (y por supuesto no se toca /usuarios_autorizados en
-        // Firebase) para no forzar un nuevo login tras el reinicio.
-        Object.keys(localStorage)
-            .filter(k => k.startsWith('registros_diarios_') || k === 'historico_general' || k === 'historial_despachos' || k === 'control_dia_activo')
-            .forEach(k => localStorage.removeItem(k));
-
-        datosHoy = []; datosAyer = []; datosHistorico = []; datosHistorialDespachos = [];
-        loteSeleccionado = {};
-
-        if (!modoFirebaseActivo()) {
-            guardarLocalHoy();
-            guardarLocalAyer();
-            localStorage.setItem('historico_general', '{}');
-            localStorage.setItem('historial_despachos', '[]');
-        }
-
-        renderTodo();
-        renderHistorialDespachos();
-        cancelarOCR();
-
-        await registrarDespachoAuditoria({ jugador: '— Sistema —', dia: 'sistema', tipo: 'reinicio_total', monto: null });
-        mostrarToast('🧨 Sistema reiniciado por completo — estado limpio', 'err');
-    } catch (err) {
-        console.error('Error al ejecutar el reinicio total:', err);
-        mostrarToast('No se pudo completar el reinicio total, revisa la consola', 'err');
-    }
+function claveSegura(nombre) {
+    return (nombre || '').trim().replace(/[.#$\[\]\/]+/g, '_');
 }
 
-document.getElementById('btn-reset-sistema').addEventListener('click', reiniciarSistemaCompleto);
+// ---------- ICONOS (SVG en línea, sin dependencias) ----------
+const ICONO_LAPIZ = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+const ICONO_GUARDAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const ICONO_CANCELAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+const ICONO_ELIMINAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>';
 
-// ---------- ENTRADA MANUAL (solo Día Actual) ----------
-document.getElementById('form-manual').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const nombreInput = document.getElementById('manual-nombre');
-    const cantidadInput = document.getElementById('manual-cantidad');
-    const nombre = nombreInput.value.trim();
-    const cantidad = parseInt(cantidadInput.value, 10);
-    if (!nombre || isNaN(cantidad)) return;
+// ============================================================
+// MÓDULO A: TABLA DE JUGADORES
+// ============================================================
+let jugadoresCachePrevio = {};
 
-    const resultado = await procesarJugadorHoy(nombre, cantidad);
-    const mensajes = {
-        nuevo: `✅ "${nombre}" registrado con ${cantidad.toLocaleString()}`,
-        actualizado: `⬆️ "${nombre}" actualizado a ${cantidad.toLocaleString()}`,
-        ignorado: `⏸️ "${nombre}" ya tiene un valor igual o mayor guardado, se ignoró`,
-        limite: `🚫 Límite de ${MAX_JUGADORES} jugadores alcanzado, no se puede agregar más`,
-        invalido: 'Datos inválidos'
-    };
-    mostrarToast(mensajes[resultado], resultado === 'nuevo' || resultado === 'actualizado' ? 'ok' : (resultado === 'invalido' || resultado === 'limite' ? 'err' : 'info'));
-    nombreInput.value = '';
-    cantidadInput.value = '';
+onValue(ref(db, 'jugadores'), (snap) => {
+    jugadoresCachePrevio = jugadoresCache;
+    jugadoresCache = snap.val() || {};
+    renderJugadores();
+    renderPodio();
+    actualizarStats();
 });
 
-// ============================================================
-// OCR (Tesseract.js) — Reconocimiento Basado en Anclas Dinámicas (v2.0)
-// ============================================================
-const inputArchivo = document.getElementById('screenshot-input');
-const overlay = document.getElementById('ocr-overlay');
-const progresoTexto = document.getElementById('ocr-progress');
-const selectorColumna = document.getElementById('columna-select');
+function renderPodio() {
+    const cont = document.getElementById('podio');
+    const entradas = Object.entries(jugadoresCache).sort((a, b) => (b[1].esencias_actuales || 0) - (a[1].esencias_actuales || 0)).slice(0, 3);
 
-inputArchivo.addEventListener('change', async (e) => {
-    const archivos = Array.from(e.target.files || []);
-    if (archivos.length === 0) return;
+    if (!entradas.length) { cont.innerHTML = ''; return; }
 
-    overlay.classList.add('active');
-    let filasCombinadas = [];
+    const estilos = [
+        { medalla: '🥇', color: '#f5c451', glow: '0 0 40px rgba(245,196,81,0.16)' },
+        { medalla: '🥈', color: '#c9c9cf', glow: '0 0 30px rgba(201,201,207,0.12)' },
+        { medalla: '🥉', color: '#d98a4a', glow: '0 0 30px rgba(217,138,74,0.14)' }
+    ];
 
-    for (let i = 0; i < archivos.length; i++) {
-        const file = archivos[i];
-        const prefijo = archivos.length > 1 ? `Imagen ${i + 1}/${archivos.length}: ` : '';
-        progresoTexto.textContent = `${prefijo}iniciando...`;
+    cont.innerHTML = entradas.map(([username, datos], idx) => {
+        const e = estilos[idx];
+        return `
+        <div class="glass-panel-strong p-5 text-center transition-transform duration-300 hover:-translate-y-1" style="border-color:${e.color}33; box-shadow:${e.glow}, 0 20px 50px rgba(0,0,0,0.4);">
+            <p class="text-[28px] mb-1 leading-none">${e.medalla}</p>
+            <p class="font-semibold text-[15px] truncate mt-2">${username}</p>
+            <p class="eyebrow mt-1">${datos.rango || 'Miembro'}</p>
+            <p class="text-[26px] font-bold mono mt-3" style="color:${e.color};">${(datos.esencias_actuales || 0).toLocaleString()}</p>
+            <p class="text-[11px] mt-0.5" style="color:var(--text-3);">esencias · ${datos.viajes_totales || 0} viajes</p>
+        </div>`;
+    }).join('');
+}
+
+function actualizarStats() {
+    const jugadores = Object.values(jugadoresCache);
+    document.getElementById('stat-jugadores').textContent = jugadores.length;
+    document.getElementById('stat-esencias').textContent = jugadores.reduce((s, j) => s + (j.esencias_actuales || 0), 0).toLocaleString();
+    document.getElementById('stat-bloqueados').textContent = jugadores.filter(j => j.estado_bloqueo).length;
+    document.getElementById('stat-despachos').textContent = Object.keys(historicoCache).length;
+}
+
+function renderJugadores() {
+    const tbody = document.getElementById('tabla-jugadores-body');
+    const entradas = Object.entries(jugadoresCache).sort((a, b) => (b[1].esencias_actuales || 0) - (a[1].esencias_actuales || 0));
+
+    document.getElementById('jugadores-vacio').classList.toggle('hidden', entradas.length > 0);
+
+    tbody.innerHTML = entradas.map(([username, datos], idx) => {
+        const bloqueado = !!datos.estado_bloqueo;
+        const filaClase = bloqueado ? 'fila-bloqueada' : '';
+        const previo = jugadoresCachePrevio[username];
+        const subioEsencias = previo && (datos.esencias_actuales || 0) > (previo.esencias_actuales || 0);
+        const claseFlash = subioEsencias ? 'flash-valor' : '';
+
+        if (editandoJugador === username) {
+            return `
+            <tr class="${filaClase}" data-username="${username}">
+                <td class="py-2.5 px-2" style="color:var(--text-3);">${idx + 1}</td>
+                <td class="px-2"><input type="text" class="edit-nombre px-2 py-1.5 w-28 text-xs" value="${username}"></td>
+                <td class="px-2">
+                    <select class="edit-rango px-2 py-1.5 text-xs">
+                        <option value="Miembro" ${datos.rango === 'Miembro' ? 'selected' : ''}>Miembro</option>
+                        <option value="Sub-Líder" ${datos.rango === 'Sub-Líder' ? 'selected' : ''}>Sub-Líder</option>
+                        <option value="Líder" ${datos.rango === 'Líder' ? 'selected' : ''}>Líder</option>
+                    </select>
+                </td>
+                <td class="px-2 text-right"><input type="number" class="edit-esencias px-2 py-1.5 w-20 text-xs text-right" value="${datos.esencias_actuales || 0}"></td>
+                <td class="px-2 text-right"><input type="number" class="edit-viajes px-2 py-1.5 w-16 text-xs text-right" value="${datos.viajes_totales || 0}"></td>
+                <td class="px-2 text-right" style="color:var(--text-3);">${datos.deuda_esencias || 0}</td>
+                <td class="px-2 text-center">${bloqueado ? '🔒' : '✅'}</td>
+                <td class="px-2 text-center whitespace-nowrap">
+                    <span class="icon-btn is-save btn-guardar-jugador" title="Guardar">${ICONO_GUARDAR}</span>
+                    <span class="icon-btn is-cancel btn-cancelar-jugador" title="Cancelar">${ICONO_CANCELAR}</span>
+                </td>
+            </tr>`;
+        }
+
+        return `
+        <tr class="${filaClase}" data-username="${username}">
+            <td class="py-2.5 px-2" style="color:var(--text-3);">${idx + 1}</td>
+            <td class="px-2 font-medium" style="color:${bloqueado ? '#ff8a8d' : 'var(--text-1)'};">${username}</td>
+            <td class="px-2 text-[12px]" style="color:var(--text-2);">${datos.rango || 'Miembro'}</td>
+            <td class="px-2 text-right mono"><span class="${claseFlash}">${(datos.esencias_actuales || 0).toLocaleString()}</span></td>
+            <td class="px-2 text-right mono" style="color:var(--text-2);">${datos.viajes_totales || 0}</td>
+            <td class="px-2 text-right mono" style="color:${(datos.deuda_esencias || 0) > 0 ? '#ff8a8d' : 'var(--text-3)'};">${datos.deuda_esencias || 0}</td>
+            <td class="px-2 text-center">${bloqueado ? '<span class="neon-red">🔒</span>' : '✅'}</td>
+            <td class="px-2 text-center whitespace-nowrap">
+                <span class="icon-btn is-edit btn-editar-jugador" title="Editar">${ICONO_LAPIZ}</span>
+                <span class="icon-btn is-delete btn-eliminar-jugador" title="Eliminar">${ICONO_ELIMINAR}</span>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+document.getElementById('tabla-jugadores-body').addEventListener('click', async (e) => {
+    const fila = e.target.closest('tr[data-username]');
+    if (!fila) return;
+    const username = fila.dataset.username;
+
+    if (e.target.closest('.btn-editar-jugador')) {
+        editandoJugador = username;
+        renderJugadores();
+    } else if (e.target.closest('.btn-cancelar-jugador')) {
+        editandoJugador = null;
+        renderJugadores();
+    } else if (e.target.closest('.btn-guardar-jugador')) {
+        const nuevoNombre = claveSegura(fila.querySelector('.edit-nombre').value) || username;
+        const nuevoRango = fila.querySelector('.edit-rango').value;
+        const nuevasEsencias = parseInt(fila.querySelector('.edit-esencias').value, 10) || 0;
+        const nuevosViajes = parseInt(fila.querySelector('.edit-viajes').value, 10) || 0;
+        const datosActuales = jugadoresCache[username] || {};
+
+        const nuevoRegistro = {
+            esencias_actuales: nuevasEsencias,
+            viajes_totales: nuevosViajes,
+            deuda_esencias: datosActuales.deuda_esencias || 0,
+            estado_bloqueo: !!datosActuales.estado_bloqueo,
+            rango: nuevoRango
+        };
 
         try {
-            const dims = await obtenerDimensiones(file);
-            const resultado = await Tesseract.recognize(file, 'spa+eng', {
-                logger: (info) => {
-                    if (info.status && info.progress != null) {
-                        const pct = Math.round(info.progress * 100);
-                        progresoTexto.textContent = `${prefijo}${traducirEstado(info.status)}... ${pct}%`;
-                    }
-                }
-            });
-            const palabras = resultado.data.words || [];
-            const filas = parsearPorAnclas(palabras, dims.width, dims.height, selectorColumna.value);
-            filasCombinadas = combinarFilas(filasCombinadas, filas);
+            if (nuevoNombre !== username) {
+                const updates = {};
+                updates[`jugadores/${username}`] = null;
+                updates[`jugadores/${nuevoNombre}`] = nuevoRegistro;
+                await update(ref(db), updates);
+            } else {
+                await set(ref(db, `jugadores/${username}`), nuevoRegistro);
+            }
+            editandoJugador = null;
+            mostrarToast('Jugador actualizado.', 'ok');
         } catch (err) {
             console.error(err);
-            mostrarToast(`Error al procesar la imagen ${i + 1}`, 'err');
+            mostrarToast('Error al guardar los cambios.', 'err');
+        }
+    } else if (e.target.closest('.btn-eliminar-jugador')) {
+        if (!confirm(`¿Eliminar por completo a "${username}" de la base de datos?`)) return;
+        try {
+            await remove(ref(db, `jugadores/${username}`));
+            mostrarToast('Jugador eliminado.', 'ok');
+        } catch (err) {
+            console.error(err);
+            mostrarToast('Error al eliminar.', 'err');
         }
     }
+});
 
-    overlay.classList.remove('active');
-    inputArchivo.value = '';
-
-    const totalDetectadoCrudo = filasCombinadas.length;
-    filasCombinadas = filtrarPorListaReal(filasCombinadas);
-    const descartados = totalDetectadoCrudo - filasCombinadas.length;
-
-    if (filasCombinadas.length === 0) {
-        mostrarToast(
-            descartados > 0
-                ? `Se detectó texto pero ninguno coincide con jugadores reales registrados (${descartados} descartado(s))`
-                : 'No se detectaron filas de jugadores en las imágenes',
-            'err'
-        );
-        return;
+document.getElementById('btn-nuevo-jugador').addEventListener('click', async () => {
+    const nombre = prompt('Nombre exacto del nuevo jugador (debe coincidir con el usado en el juego):');
+    if (!nombre || !nombre.trim()) return;
+    const clave = claveSegura(nombre);
+    if (jugadoresCache[clave]) { mostrarToast('Ese jugador ya existe.', 'err'); return; }
+    try {
+        await set(ref(db, `jugadores/${clave}`), {
+            esencias_actuales: 0, viajes_totales: 0, deuda_esencias: 0, estado_bloqueo: false, rango: 'Miembro'
+        });
+        mostrarToast('Jugador agregado.', 'ok');
+    } catch (err) {
+        console.error(err);
+        mostrarToast('Error al agregar el jugador.', 'err');
     }
-    if (descartados > 0) {
-        mostrarToast(`🧹 ${descartados} lectura(s) descartada(s) por no coincidir con ningún jugador real`, 'info');
-    }
-    ocrPendiente = filasCombinadas;
-    mostrarRevisionOCR(filasCombinadas);
 });
 
 // ============================================================
-// FILTRO ESTRICTO CONTRA LA LISTA REAL DE JUGADORES (whitelist)
-// ------------------------------------------------------------
-// El escaneo (Tesseract) a veces "inventa" filas a partir de texto de
-// fondo, nombres de clanes, etiquetas de la interfaz del juego o
-// valores sueltos del mapa. En vez de confiar solo en la lista de
-// palabras prohibidas, cada nombre detectado se compara contra el
-// diccionario oficial de jugadores REALES ya registrados en Firebase
-// (hoy + ayer). Si no hay una coincidencia razonable, la fila se
-// descarta automáticamente sin llegar siquiera a la revisión manual.
+// MÓDULO B: HISTORIAL DE DESPACHOS
 // ============================================================
+onValue(ref(db, 'historico_general'), (snap) => {
+    historicoCache = snap.val() || {};
+    renderHistorial();
+    actualizarStats();
+});
 
-// Normaliza un nombre para comparar: sin tildes, minúsculas, y solo
-// letras/números (sin espacios ni símbolos que meta el OCR).
-function normalizarNombre(str) {
-    return (str || '')
-        .toString()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '');
+function renderHistorial() {
+    const cont = document.getElementById('historial-lista');
+    const entradas = Object.entries(historicoCache).sort((a, b) => new Date(b[1].fecha) - new Date(a[1].fecha));
+
+    document.getElementById('historial-vacio').classList.toggle('hidden', entradas.length > 0);
+
+    cont.innerHTML = entradas.map(([id, datos]) => {
+        const fechaFmt = new Date(datos.fecha).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
+        const usuarios = (datos.usuarios_procesados || []).map(u => u.username).join(', ') || '—';
+
+        const viajesHtml = editandoDespacho === id
+            ? `<input type="number" class="edit-viajes-despacho px-2 py-1.5 w-16 text-xs text-right" value="${datos.viajes_repartidos || 0}">
+               <span class="icon-btn is-save btn-guardar-despacho" title="Guardar">${ICONO_GUARDAR}</span>
+               <span class="icon-btn is-cancel btn-cancelar-despacho" title="Cancelar">${ICONO_CANCELAR}</span>`
+            : `<span class="mono font-semibold" style="color:var(--text-1);">${datos.viajes_repartidos || 0}</span>
+               <span class="icon-btn is-edit btn-editar-despacho" title="Editar viajes">${ICONO_LAPIZ}</span>`;
+
+        return `
+        <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style="background:rgba(255,255,255,0.02); border:1px solid var(--hairline); border-radius:var(--r-sm);" data-id="${id}">
+            <div class="min-w-0">
+                <p class="text-[13px]"><span style="color:var(--text-3);">Fecha</span> ${fechaFmt} <span style="color:var(--text-3);">· Líder</span> <span class="font-semibold" style="color:var(--accent);">${datos.lider_gestion || '—'}</span></p>
+                <p class="text-[11.5px] truncate mt-1" style="color:var(--text-3);" title="${usuarios}">Jugadores: ${usuarios}</p>
+                <p class="text-[11.5px] mt-0.5" style="color:var(--text-3);">Total esencias del bloque: <span class="mono" style="color:var(--text-2);">${(datos.total_esencias_bloque || 0).toLocaleString()}</span></p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="eyebrow">Viajes</span>
+                ${viajesHtml}
+            </div>
+        </div>`;
+    }).join('');
 }
 
-// Distancia de Levenshtein clásica (número mínimo de ediciones para
-// convertir una cadena en la otra), usada para tolerar errores típicos
-// de lectura (0/O, 1/I/l, rn/m, letras pegadas o saltadas).
-function distanciaLevenshtein(a, b) {
-    const m = a.length, n = b.length;
-    if (m === 0) return n;
-    if (n === 0) return m;
-    const fila = new Array(n + 1);
-    for (let j = 0; j <= n; j++) fila[j] = j;
-    for (let i = 1; i <= m; i++) {
-        let anterior = fila[0];
-        fila[0] = i;
-        for (let j = 1; j <= n; j++) {
-            const temp = fila[j];
-            fila[j] = a[i - 1] === b[j - 1]
-                ? anterior
-                : 1 + Math.min(anterior, fila[j], fila[j - 1]);
-            anterior = temp;
+document.getElementById('historial-lista').addEventListener('click', async (e) => {
+    const bloque = e.target.closest('div[data-id]');
+    if (!bloque) return;
+    const id = bloque.dataset.id;
+
+    if (e.target.closest('.btn-editar-despacho')) {
+        editandoDespacho = id;
+        renderHistorial();
+    } else if (e.target.closest('.btn-cancelar-despacho')) {
+        editandoDespacho = null;
+        renderHistorial();
+    } else if (e.target.closest('.btn-guardar-despacho')) {
+        const nuevoValor = parseInt(bloque.querySelector('.edit-viajes-despacho').value, 10) || 0;
+        try {
+            await update(ref(db, `historico_general/${id}`), { viajes_repartidos: nuevoValor });
+            editandoDespacho = null;
+            mostrarToast('Cantidad de viajes actualizada.', 'ok');
+        } catch (err) {
+            console.error(err);
+            mostrarToast('Error al guardar.', 'err');
         }
     }
-    return fila[n];
-}
+});
 
-// Diccionario oficial: nombres reales ya presentes en Firebase (hoy y
-// ayer), que es la fuente de verdad de quiénes son integrantes reales.
-// clave normalizada -> nombre real tal como está guardado.
-function obtenerListaUsuariosReales() {
-    const mapa = new Map();
-    [...datosHoy, ...datosAyer].forEach(j => {
-        const clave = normalizarNombre(j.name);
-        if (clave && !mapa.has(clave)) mapa.set(clave, j.name);
-    });
-    return mapa;
-}
+// ============================================================
+// LECTOR DE CAPTURAS — 100% LOCAL (Tesseract.js, sin API key, sin límites)
+// ============================================================
+const dropzone = document.getElementById('dropzone');
+const inputArchivo = document.getElementById('input-archivo');
+const overlay = document.getElementById('overlay-procesando');
+const overlayProgreso = document.getElementById('overlay-progreso');
 
-// Empareja un nombre detectado contra el diccionario real. Coincidencia
-// exacta primero; si no, tolera hasta ~20% de caracteres distintos
-// (mínimo 1) para absorber errores comunes de OCR sin abrir la puerta a
-// texto completamente ajeno (nombres de clan, palabras de interfaz, etc).
-function emparejarConListaReal(nombreDetectado, diccionario) {
-    const clave = normalizarNombre(nombreDetectado);
-    if (!clave) return null;
-    if (diccionario.has(clave)) return diccionario.get(clave);
+dropzone.addEventListener('click', () => inputArchivo.click());
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('arrastrando'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('arrastrando'));
+dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('arrastrando');
+    if (e.dataTransfer.files.length) manejarArchivos(e.dataTransfer.files);
+});
+inputArchivo.addEventListener('change', (e) => {
+    if (e.target.files.length) manejarArchivos(e.target.files);
+    inputArchivo.value = '';
+});
 
-    let mejor = null, mejorDist = Infinity;
-    for (const [claveReal, nombreReal] of diccionario.entries()) {
-        const dist = distanciaLevenshtein(clave, claveReal);
-        const toleranciaMax = Math.max(1, Math.ceil(Math.max(clave.length, claveReal.length) * 0.2));
-        if (dist <= toleranciaMax && dist < mejorDist) {
-            mejorDist = dist;
-            mejor = nombreReal;
+async function manejarArchivos(fileList) {
+    const lider = document.getElementById('input-lider').value.trim();
+    const columna = document.getElementById('input-columna').value;
+    if (!lider) { mostrarToast('Escribe el nombre del líder que gestiona este despacho.', 'err'); return; }
+
+    const archivos = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    if (!archivos.length) { mostrarToast('Selecciona una imagen válida.', 'err'); return; }
+
+    const listaUsuariosReales = Object.keys(jugadoresCache);
+
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+
+    // Varias imágenes (páginas del ranking) se tratan como UN solo despacho:
+    // se combinan por nombre quedándonos con el valor máximo visto, así una
+    // fila fija que se repite igual en cada página (p. ej. tu propio personaje)
+    // no se cuenta varias veces.
+    const lecturaCombinada = new Map();
+    const nuevosCombinados = new Map();
+
+    for (let i = 0; i < archivos.length; i++) {
+        overlayProgreso.textContent = `Escaneando imagen ${i + 1} de ${archivos.length}...`;
+        try {
+            const { conocidos, candidatosNuevos } = await leerCapturaLocal(archivos[i], listaUsuariosReales, columna);
+            for (const m of conocidos) {
+                const anterior = lecturaCombinada.get(m.username);
+                if (anterior === undefined || m.esencias_netas > anterior) {
+                    lecturaCombinada.set(m.username, m.esencias_netas);
+                }
+            }
+            for (const c of candidatosNuevos) {
+                const anterior = nuevosCombinados.get(c.nombre);
+                if (anterior === undefined || c.esencias_netas > anterior) {
+                    nuevosCombinados.set(c.nombre, c.esencias_netas);
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            mostrarToast(`Error leyendo imagen ${i + 1}: ${err.message}`, 'err');
         }
     }
-    return mejor;
-}
 
-// Filtro estricto: toda fila que no logre emparejar con un jugador real
-// se descarta de inmediato. Excepción: si la pandilla todavía no tiene
-// NINGÚN jugador registrado (arranque en blanco, sin diccionario contra
-// el cual comparar), se deja pasar todo tal cual para poder cargar a
-// los primeros integrantes; a partir de ahí el filtro ya queda activo.
-function filtrarPorListaReal(filas) {
-    const diccionario = obtenerListaUsuariosReales();
-    if (diccionario.size === 0) return filas;
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
 
-    const resultado = [];
-    for (const fila of filas) {
-        const nombreReal = emparejarConListaReal(fila.name, diccionario);
-        if (nombreReal) resultado.push({ ...fila, name: nombreReal });
-        // sin coincidencia con ningún jugador real => se descarta
-        // (texto de fondo, nombre de clan, palabra de interfaz, etc.)
+    if (lecturaCombinada.size) {
+        try {
+            await guardarDespacho(lecturaCombinada, lider);
+        } catch (err) {
+            console.error(err);
+            mostrarToast(`Error al guardar el despacho: ${err.message}`, 'err');
+        }
     }
-    return resultado;
-}
 
-function combinarFilas(base, nuevas) {
-    const mapa = new Map(base.map(f => [f.name.toLowerCase(), f]));
-    for (const fila of nuevas) {
-        const clave = fila.name.toLowerCase();
-        const existente = mapa.get(clave);
-        if (!existente || fila.crystals > existente.crystals) mapa.set(clave, fila);
+    if (nuevosCombinados.size) {
+        mostrarRevisionNuevosJugadores(nuevosCombinados, lider);
+    } else if (!lecturaCombinada.size) {
+        mostrarToast('El lector no encontró ningún dato reconocible en la imagen.', 'info');
     }
-    return Array.from(mapa.values());
 }
 
-function obtenerDimensiones(file) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight }); URL.revokeObjectURL(url); };
-        img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
-        img.src = url;
-    });
+// ============================================================
+// REVISIÓN DE JUGADORES NUEVOS DETECTADOS (evita crear ruido: el líder
+// confirma con un clic antes de que cualquier nombre no reconocido
+// previamente entre a la base de datos).
+// ============================================================
+let nuevosPendientes = null;
+let liderPendiente = null;
+
+function mostrarRevisionNuevosJugadores(nuevosCombinados, lider) {
+    nuevosPendientes = nuevosCombinados;
+    liderPendiente = lider;
+
+    document.getElementById('lista-nuevos').innerHTML = [...nuevosCombinados.entries()].map(([nombre, valor]) => `
+        <label class="flex items-center justify-between gap-3 px-3.5 py-2.5 cursor-pointer" style="background:rgba(255,255,255,0.02); border:1px solid var(--hairline); border-radius:var(--r-sm);">
+            <span class="flex items-center gap-2.5 text-sm">
+                <input type="checkbox" class="chk-nuevo accent-red-600" data-nombre="${nombre}" checked>
+                ${nombre}
+            </span>
+            <span class="mono text-xs" style="color:var(--text-3);">${valor}</span>
+        </label>
+    `).join('');
+
+    document.getElementById('modal-nuevos').classList.remove('hidden');
+    document.getElementById('modal-nuevos').classList.add('flex');
 }
 
-function traducirEstado(status) {
-    const mapa = {
-        'loading tesseract core': 'Cargando motor', 'initializing tesseract': 'Inicializando',
-        'loading language traineddata': 'Cargando idioma', 'initializing api': 'Preparando',
-        'recognizing text': 'Leyendo texto'
+function cerrarModalNuevos() {
+    document.getElementById('modal-nuevos').classList.add('hidden');
+    document.getElementById('modal-nuevos').classList.remove('flex');
+    nuevosPendientes = null;
+    liderPendiente = null;
+}
+
+document.getElementById('btn-cancelar-nuevos').addEventListener('click', cerrarModalNuevos);
+
+document.getElementById('btn-confirmar-nuevos').addEventListener('click', async () => {
+    const seleccionados = Array.from(document.querySelectorAll('.chk-nuevo:checked')).map(el => el.dataset.nombre);
+    const lider = liderPendiente;
+    const pendientes = nuevosPendientes;
+    cerrarModalNuevos();
+
+    if (!seleccionados.length || !pendientes) return;
+
+    try {
+        const updates = {};
+        const usuariosProcesados = [];
+        let totalEsenciasBloque = 0;
+
+        for (const nombre of seleccionados) {
+            const clave = claveSegura(nombre);
+            const valor = pendientes.get(nombre) || 0;
+            const resultado = calcularActualizacionJugador({}, valor);
+            updates[`jugadores/${clave}/esencias_actuales`] = resultado.esencias_actuales;
+            updates[`jugadores/${clave}/viajes_totales`] = resultado.viajes_totales;
+            updates[`jugadores/${clave}/deuda_esencias`] = resultado.deuda_esencias;
+            updates[`jugadores/${clave}/estado_bloqueo`] = resultado.estado_bloqueo;
+            updates[`jugadores/${clave}/rango`] = 'Miembro';
+            totalEsenciasBloque += valor;
+            usuariosProcesados.push({ username: clave, esencias_netas: valor });
+        }
+
+        const nuevoRef = push(ref(db, 'historico_general'));
+        updates[`historico_general/${nuevoRef.key}`] = {
+            fecha: new Date().toISOString(),
+            lider_gestion: lider || operatorName || 'Desconocido',
+            usuarios_procesados: usuariosProcesados,
+            viajes_repartidos: usuariosProcesados.length,
+            total_esencias_bloque: totalEsenciasBloque
+        };
+
+        await update(ref(db), updates);
+        mostrarToast(`${usuariosProcesados.length} jugador(es) nuevo(s) agregado(s) y acreditado(s).`, 'ok');
+    } catch (err) {
+        console.error(err);
+        mostrarToast('Error al agregar los jugadores nuevos.', 'err');
+    }
+});
+
+async function guardarDespacho(lecturaCombinada, lider) {
+    const updates = {};
+    const usuariosProcesados = [];
+    let totalEsenciasBloque = 0;
+
+    for (const [username, esenciasNetas] of lecturaCombinada.entries()) {
+        const actual = jugadoresCache[username] || {};
+        const resultado = calcularActualizacionJugador(actual, esenciasNetas);
+        updates[`jugadores/${username}/esencias_actuales`] = resultado.esencias_actuales;
+        updates[`jugadores/${username}/viajes_totales`] = resultado.viajes_totales;
+        updates[`jugadores/${username}/deuda_esencias`] = resultado.deuda_esencias;
+        updates[`jugadores/${username}/estado_bloqueo`] = resultado.estado_bloqueo;
+        totalEsenciasBloque += esenciasNetas;
+        usuariosProcesados.push({ username, esencias_netas: esenciasNetas });
+    }
+
+    const nuevoRef = push(ref(db, 'historico_general'));
+    updates[`historico_general/${nuevoRef.key}`] = {
+        fecha: new Date().toISOString(),
+        lider_gestion: lider,
+        usuarios_procesados: usuariosProcesados,
+        viajes_repartidos: usuariosProcesados.length,
+        total_esencias_bloque: totalEsenciasBloque
     };
-    return mapa[status] || status;
+
+    await update(ref(db), updates);
+    mostrarToast(`Despacho guardado: ${usuariosProcesados.length} jugador(es) procesados.`, 'ok');
 }
 
-// ---- Bandas de RESPALDO (solo si no se detecta ningún ancla real en la imagen) ----
-const BANDA_MENU_LATERAL_RESPALDO = 0.19;
-const BANDA_NOMBRE_RESPALDO = [0.19, 0.50];
-const BANDAS_COLUMNAS_RESPALDO = {
-    almacenamiento: [0.50, 0.615], refinadores: [0.615, 0.72],
-    transferido: [0.72, 0.825], entregado: [0.825, 0.97]
-};
+function calcularActualizacionJugador(actual, esenciasNetas) {
+    let deuda = actual.deuda_esencias || 0;
+    let bloqueado;
 
-const PALABRAS_PROHIBIDAS = [
-    'PARTICIPANTE', 'RESULTADO', 'PANDILLA', 'ESTADISTIC', 'ESTADÍSTIC',
-    'HISTORIAL', 'CLASIFICACI', 'TOTAL', 'ACTUALIZ', 'AVANZAR', 'ATRAS',
-    'ATRÁS', 'LABORATORIO', 'DIPLOMACIA', 'DIFLOMACIA', 'TERRITORIO',
-    'CONTRATO', 'TAREA', 'TIENDA', 'MIEMBRO', 'SINDICATO', 'ALMACENAM',
-    'REFINADOR', 'TRANSFERIDO', 'ENTREGADO', 'CAPTURA', 'CARGADO'
-];
-
-// Anclas: palabras del encabezado real del juego. Se buscan por regex y su
-// posición (x,y) sirve para calcular las columnas dinámicamente en vez de
-// usar fracciones fijas del ancho — así no falla al cambiar de resolución,
-// recorte o dispositivo (Anchor-Based Parsing).
-const PATRONES_ANCLA = {
-    nombre: /PARTICIPANT/i,
-    almacenamiento: /ALMACENAM/i,
-    refinadores: /REFINADOR/i,
-    transferido: /TRANSFERI|CLASIF/i,
-    entregado: /ENTREGADO/i
-};
-
-function encontrarAncla(palabras, regex) {
-    const coincidencias = palabras.filter(w => regex.test(w.texto));
-    if (coincidencias.length === 0) return null;
-    const cx = coincidencias.reduce((s, w) => s + (w.x0 + w.x1) / 2, 0) / coincidencias.length;
-    const cy = coincidencias.reduce((s, w) => s + (w.y0 + w.y1) / 2, 0) / coincidencias.length;
-    return { cx, cy };
-}
-
-function esTokenDeNombreValido(w) {
-    const t = w.texto;
-    if (t.length < 2) return false;
-    if (!/[A-Za-zÀ-ÿ]/.test(t)) return false;
-    if (typeof w.confianza === 'number' && w.confianza < 45) return false;
-    const tUpper = t.toUpperCase();
-    if (PALABRAS_PROHIBIDAS.some(kw => tUpper.includes(kw) || (tUpper.length >= 4 && kw.includes(tUpper)))) return false;
-    return true;
-}
-
-function quitarTokenAisladoInicial(tokens, ancho) {
-    let limpio = tokens;
-    while (limpio.length > 1) {
-        const primero = limpio[0];
-        const segundo = limpio[1];
-        const salto = segundo.x0 - primero.x1;
-        const saltoMinimoSospechoso = Math.max(38, ancho * 0.022);
-        if (primero.texto.length <= 3 && salto > saltoMinimoSospechoso) {
-            limpio = limpio.slice(1);
-        } else break;
-    }
-    return limpio;
-}
-
-function parsearPorAnclas(palabrasCrudas, ancho, alto, columnaElegida) {
-    const palabras = palabrasCrudas
-        .map(w => ({ texto: (w.text || '').trim(), x0: w.bbox.x0, x1: w.bbox.x1, y0: w.bbox.y0, y1: w.bbox.y1, confianza: w.confidence }))
-        .filter(w => w.texto.length > 0)
-        .filter(w => /[A-Za-zÀ-ÿ0-9]/.test(w.texto));
-
-    const anclaNombre = encontrarAncla(palabras, PATRONES_ANCLA.nombre);
-    const anclaAlmacen = encontrarAncla(palabras, PATRONES_ANCLA.almacenamiento);
-    const anclaRefin = encontrarAncla(palabras, PATRONES_ANCLA.refinadores);
-    const anclaTransf = encontrarAncla(palabras, PATRONES_ANCLA.transferido);
-    const anclaEntreg = encontrarAncla(palabras, PATRONES_ANCLA.entregado);
-    const totalAnclas = [anclaNombre, anclaAlmacen, anclaRefin, anclaTransf, anclaEntreg].filter(Boolean).length;
-
-    let bandaNombre, bandasColumnas, sidebarCutoff, headerY;
-
-    if (totalAnclas >= 3 && anclaNombre) {
-        const puntos = [
-            { clave: 'nombre', ancla: anclaNombre },
-            { clave: 'almacenamiento', ancla: anclaAlmacen },
-            { clave: 'refinadores', ancla: anclaRefin },
-            { clave: 'transferido', ancla: anclaTransf },
-            { clave: 'entregado', ancla: anclaEntreg }
-        ].filter(p => p.ancla).sort((a, b) => a.ancla.cx - b.ancla.cx);
-
-        bandasColumnas = {};
-        for (let i = 0; i < puntos.length; i++) {
-            const izq = i === 0
-                ? Math.max(0, puntos[i].ancla.cx - (puntos[i + 1] ? (puntos[i + 1].ancla.cx - puntos[i].ancla.cx) / 2 : puntos[i].ancla.cx * 0.4))
-                : (puntos[i - 1].ancla.cx + puntos[i].ancla.cx) / 2;
-            const der = i === puntos.length - 1
-                ? ancho
-                : (puntos[i].ancla.cx + puntos[i + 1].ancla.cx) / 2;
-            bandasColumnas[puntos[i].clave] = [izq / ancho, der / ancho];
-        }
-        bandaNombre = bandasColumnas.nombre || BANDA_NOMBRE_RESPALDO;
-        sidebarCutoff = (anclaNombre.cx * 0.55) / ancho;
-        headerY = Math.max(...[anclaNombre, anclaAlmacen, anclaRefin, anclaTransf, anclaEntreg].filter(Boolean).map(a => a.cy));
+    if (esenciasNetas >= REQUISITO_MINIMO_ESENCIAS) {
+        const excedente = esenciasNetas - REQUISITO_MINIMO_ESENCIAS;
+        deuda = Math.max(0, deuda - excedente);
+        bloqueado = deuda > 0;
     } else {
-        bandaNombre = BANDA_NOMBRE_RESPALDO;
-        bandasColumnas = BANDAS_COLUMNAS_RESPALDO;
-        sidebarCutoff = BANDA_MENU_LATERAL_RESPALDO;
-        headerY = 0;
+        const faltante = REQUISITO_MINIMO_ESENCIAS - esenciasNetas;
+        deuda += faltante;
+        bloqueado = true;
     }
 
-    const bandaValor = bandasColumnas[columnaElegida] || bandasColumnas.almacenamiento || BANDAS_COLUMNAS_RESPALDO.almacenamiento;
+    return {
+        esencias_actuales: (actual.esencias_actuales || 0) + esenciasNetas,
+        viajes_totales: (actual.viajes_totales || 0) + 1,
+        deuda_esencias: deuda,
+        estado_bloqueo: bloqueado
+    };
+}
 
-    const utiles = palabras
-        .filter(w => w.x0 >= sidebarCutoff * ancho)
-        .filter(w => w.y0 > headerY + 3);
+// Encabezados reales de la tabla "PARTICIPANTES" del juego, en orden.
+// Usados para ubicar el centro X de cada columna dentro de CADA imagen por
+// separado (no coordenadas fijas), así el lector se adapta automáticamente
+// a capturas de distinto tamaño de pantalla / resolución de dispositivo.
+// Prefijos cortos a propósito: toleran que el OCR falle 1-2 letras al
+// final de la palabra sin dejar de reconocer el encabezado.
+const PATRONES_COLUMNA = {
+    'En almacenamiento': /ALMAC/,
+    'Cargado en refinadores': /REFINA/,
+    'Transferido para clasificación': /TRANSF|CLASIF/,
+    'Entregado': /ENTREG/
+};
+// Posición relativa (fracción del ancho de la imagen) usada solo si el OCR
+// no logra leer el encabezado de esa columna en una imagen concreta.
+const FALLBACK_COLUMNA = {
+    'En almacenamiento': 0.57,
+    'Cargado en refinadores': 0.68,
+    'Transferido para clasificación': 0.80,
+    'Entregado': 0.90
+};
 
-    if (utiles.length === 0) return [];
+// Texto de interfaz del juego (menú lateral, encabezados, botones) que
+// NUNCA debe proponerse como jugador nuevo, aunque estructuralmente tenga
+// un número al lado (p. ej. los iconos del HUD arriba de la tabla).
+const ETIQUETAS_INTERFAZ = [
+    'PARTICIPANTES', 'ESTADISTICAS', 'HISTORIAL', 'MIEMBROS', 'TIENDA', 'TAREAS',
+    'CONTRATOS DEL SINDICATO', 'CLASIFICACION', 'CAPTURA DE TERRITORIO',
+    'REGALO DE PANDILLA', 'DIPLOMACIA', 'LABORATORIO', 'PANDILLAS',
+    'RESULTADOS DE PANDILLA HOY', 'TOTAL', 'ACTUALIZ DE ESTADISTICAS',
+    'ATRAS', 'AVANZAR', 'EN ALMACENAM', 'CARGADO EN REFINADORES',
+    'TRANSFERIDO PARA CLASIF', 'ENTREGADO'
+].map(normalizarNombre);
 
-    utiles.sort((a, b) => a.y0 - b.y0);
-    let filas = [];
+function esTextoDeInterfaz(normTexto) {
+    return ETIQUETAS_INTERFAZ.some(et => normTexto.includes(et) || et.includes(normTexto));
+}
+
+async function leerCapturaLocal(archivo, listaUsuariosReales, columnaObjetivo) {
+    const bitmap = await createImageBitmap(archivo);
+    const { data } = await Tesseract.recognize(archivo, 'spa+eng');
+    const palabras = (data.words || []).filter(w => w.text && w.text.trim());
+    return extraerLecturaDeOCR(palabras, listaUsuariosReales, columnaObjetivo, bitmap.width, bitmap.height);
+}
+
+function extraerLecturaDeOCR(palabras, listaUsuariosReales, columnaObjetivo, anchoImg, altoImg) {
+    const centrosColumna = detectarCentrosColumna(palabras, anchoImg);
+    const xObjetivo = centrosColumna[columnaObjetivo] ?? (FALLBACK_COLUMNA[columnaObjetivo] * anchoImg);
+
+    const filas = agruparEnFilas(palabras, altoImg);
+    const conocidos = [];
+    const candidatosNuevos = [];
+
+    for (const fila of filas) {
+        const tokensTexto = fila.filter(w => /[a-zA-ZÀ-ÿ]/.test(w.text));
+        if (!tokensTexto.length) continue;
+
+        const nombreCandidato = tokensTexto.map(w => w.text).join(' ').replace(/\s+/g, ' ').trim();
+        const normCandidato = normalizarNombre(nombreCandidato);
+        if (normCandidato.length < 3 || esTextoDeInterfaz(normCandidato)) continue;
+
+        const xMaxNombre = Math.max(...tokensTexto.map(w => w.bbox.x1));
+        const tokensNumericos = fila.filter(w => /^\d[\d.,]*$/.test(w.text.trim()) && w.bbox.x0 > xMaxNombre);
+        if (!tokensNumericos.length) continue;
+
+        let mejorToken = null;
+        let mejorDist = Infinity;
+        for (const t of tokensNumericos) {
+            const cx = (t.bbox.x0 + t.bbox.x1) / 2;
+            const dist = Math.abs(cx - xObjetivo);
+            if (dist < mejorDist) { mejorDist = dist; mejorToken = t; }
+        }
+
+        const valor = parseInt(mejorToken.text.replace(/[^\d]/g, ''), 10);
+        if (!Number.isFinite(valor)) continue;
+
+        const match = mejorCoincidenciaUsuario(nombreCandidato, listaUsuariosReales);
+        if (match) {
+            conocidos.push({ username: match, esencias_netas: valor });
+        } else {
+            candidatosNuevos.push({ nombre: nombreCandidato, esencias_netas: valor });
+        }
+    }
+
+    return { conocidos, candidatosNuevos };
+}
+
+function detectarCentrosColumna(palabras, anchoImg) {
+    const acumulado = {};
+    for (const w of palabras) {
+        const norm = normalizarParaColumna(w.text);
+        for (const [clave, patron] of Object.entries(PATRONES_COLUMNA)) {
+            if (patron.test(norm)) {
+                const cx = (w.bbox.x0 + w.bbox.x1) / 2;
+                (acumulado[clave] ??= []).push(cx);
+            }
+        }
+    }
+    const centros = {};
+    for (const [clave, xs] of Object.entries(acumulado)) {
+        centros[clave] = xs.reduce((a, b) => a + b, 0) / xs.length;
+    }
+    return centros;
+}
+
+function agruparEnFilas(palabras, altoImg) {
+    const conCentro = palabras
+        .map(w => ({ ...w, yc: (w.bbox.y0 + w.bbox.y1) / 2 }))
+        .sort((a, b) => a.yc - b.yc);
+    const tolerancia = Math.max(altoImg * 0.018, 10);
+
+    const filas = [];
     let filaActual = [];
-    let yPromedio = null;
+    let yReferencia = null;
 
-    for (const w of utiles) {
-        const centroY = (w.y0 + w.y1) / 2;
-        const alturaPalabra = w.y1 - w.y0;
-        if (filaActual.length === 0 || Math.abs(centroY - yPromedio) <= alturaPalabra * 0.6) {
+    for (const w of conCentro) {
+        if (yReferencia === null || Math.abs(w.yc - yReferencia) <= tolerancia) {
             filaActual.push(w);
-            const centros = filaActual.map(x => (x.y0 + x.y1) / 2);
-            yPromedio = centros.reduce((a, b) => a + b, 0) / centros.length;
+            yReferencia = filaActual.reduce((s, x) => s + x.yc, 0) / filaActual.length;
         } else {
             filas.push(filaActual);
             filaActual = [w];
-            yPromedio = centroY;
+            yReferencia = w.yc;
         }
     }
-    if (filaActual.length > 0) filas.push(filaActual);
+    if (filaActual.length) filas.push(filaActual);
+    return filas;
+}
 
-    // La fila de paginación ("ATRÁS" / números de página / "AVANZAR") marca el
-    // final real de la tabla. Todo lo que esté en o después de esa fila —
-    // incluida la fila destacada del dueño de la cuenta que aparece al final
-    // de la captura — se ignora por completo, sin importar el nombre.
-    const indiceNavegacion = filas.findIndex(fila =>
-        /AVANZAR|ATRAS|ATRÁS/i.test(fila.map(w => w.texto).join(' '))
-    );
-    if (indiceNavegacion !== -1) filas = filas.slice(0, indiceNavegacion);
+const DIACRITICOS = new RegExp('[̀-ͯ]', 'g');
 
-    const encontrados = [];
-    for (const fila of filas) {
-        fila.sort((a, b) => a.x0 - b.x0);
+function normalizarParaColumna(s) {
+    return (s || '').normalize('NFD').replace(DIACRITICOS, '').toUpperCase();
+}
 
-        let tokensNombre = fila.filter(w => {
-            const cx = (w.x0 + w.x1) / 2 / ancho;
-            return cx >= bandaNombre[0] && cx <= bandaNombre[1] && esTokenDeNombreValido(w);
-        });
-        tokensNombre = quitarTokenAisladoInicial(tokensNombre, ancho);
+function normalizarNombre(s) {
+    return (s || '').normalize('NFD').replace(DIACRITICOS, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
 
-        let nombre = tokensNombre.map(w => w.texto).join(' ').trim();
-        nombre = nombre.replace(/[|_\-•:.]+$/g, '').replace(/^[|_\-•:.]+/g, '').trim();
+function distanciaLevenshtein(a, b) {
+    const m = a.length, n = b.length;
+    if (!m) return n;
+    if (!n) return m;
+    const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            const costo = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + costo);
+        }
+    }
+    return dp[m][n];
+}
 
-        if (nombre.length < 2) continue;
-        if (PALABRAS_PROHIBIDAS.some(kw => nombre.toUpperCase().includes(kw))) continue;
+// Coincidencia difusa: tolera errores típicos de OCR (letras confundidas,
+// espacios de más/menos) pero exige alta similitud. Muchos jugadores
+// comparten el sufijo "Exotic", así que un umbral por sí solo no basta —
+// si el mejor candidato y el segundo mejor quedan demasiado cerca (nombre
+// ambiguo, p. ej. "Suleyman Exotic" vs "Mario Exotic" si el OCR solo
+// rescata "Exotic"), se descarta el emparejamiento por completo en vez de
+// arriesgarse a acreditarle esencias al jugador equivocado.
+const UMBRAL_COINCIDENCIA = 0.72;
+const MARGEN_MINIMO_AMBIGUEDAD = 0.08;
 
-        const tokenValor = fila.find(w => {
-            const cx = (w.x0 + w.x1) / 2 / ancho;
-            return cx >= bandaValor[0] && cx <= bandaValor[1] && /\d/.test(w.texto);
-        });
-        if (!tokenValor) continue;
+function mejorCoincidenciaUsuario(textoDetectado, listaUsuariosReales) {
+    const norm = normalizarNombre(textoDetectado);
+    if (norm.length < 3) return null;
 
-        const soloDigitos = tokenValor.texto.replace(/[^\d]/g, '');
-        if (!soloDigitos) continue;
-        const cantidad = parseInt(soloDigitos, 10);
-        if (isNaN(cantidad)) continue;
+    const candidatos = [];
 
-        encontrados.push({ name: nombre, crystals: cantidad });
+    for (const username of listaUsuariosReales) {
+        const normUser = normalizarNombre(username);
+        if (!normUser) continue;
+
+        if (norm === normUser) return username; // coincidencia exacta: no hay ambigüedad posible
+
+        let puntaje;
+        if (norm.includes(normUser) || normUser.includes(norm)) {
+            puntaje = Math.min(normUser.length, norm.length) / Math.max(normUser.length, norm.length);
+        } else {
+            const dist = distanciaLevenshtein(norm, normUser);
+            puntaje = 1 - dist / Math.max(norm.length, normUser.length);
+        }
+        candidatos.push({ username, puntaje });
     }
 
-    const vistos = new Set();
-    const sinDuplicados = [];
-    for (const item of encontrados) {
-        const clave = item.name.toLowerCase();
-        if (vistos.has(clave)) continue;
-        vistos.add(clave);
-        sinDuplicados.push(item);
-    }
-    return sinDuplicados;
-}
+    if (!candidatos.length) return null;
+    candidatos.sort((a, b) => b.puntaje - a.puntaje);
 
-// ---------- REVISIÓN MANUAL ANTES DE CONFIRMAR (build atómico también) ----------
-function mostrarRevisionOCR(filas) {
-    const cont = document.getElementById('ocr-review') || crearContenedorRevision();
-    const lista = document.getElementById('ocr-review-list');
+    const [mejor, segundo] = candidatos;
+    if (mejor.puntaje < UMBRAL_COINCIDENCIA) return null;
+    if (segundo && (mejor.puntaje - segundo.puntaje) < MARGEN_MINIMO_AMBIGUEDAD) return null;
 
-    const items = filas.map((fila, idx) => `
-        <div class="flex items-center gap-2 bg-zinc-950/60 glass-panel border border-zinc-800 rounded p-2">
-            <input type="text" value="${escapeHTML(fila.name)}" data-idx="${idx}" data-field="name"
-                class="ocr-input-name bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs sm:text-sm flex-1 min-w-0 text-zinc-200" />
-            <input type="number" value="${fila.crystals}" data-idx="${idx}" data-field="crystals"
-                class="ocr-input-crystals bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs sm:text-sm w-20 sm:w-28 text-right text-zinc-200" />
-            <button data-idx="${idx}" class="btn-quitar-ocr text-red-500 hover:text-red-400 text-sm px-1 sm:px-2 cursor-pointer shrink-0">✖</button>
-        </div>`);
-    lista.innerHTML = items.join('');
-
-    lista.querySelectorAll('.btn-quitar-ocr').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const idx = parseInt(btn.getAttribute('data-idx'), 10);
-            ocrPendiente.splice(idx, 1);
-            mostrarRevisionOCR(ocrPendiente);
-        });
-    });
-    cont.classList.remove('hidden');
-    cont.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function crearContenedorRevision() {
-    const div = document.createElement('div');
-    div.id = 'ocr-review';
-    div.className = 'hidden mt-8 bg-zinc-950/70 glass-panel border-t-4 border-yellow-500 p-3 sm:p-4 rounded-lg shadow-xl';
-    div.innerHTML = `
-        <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-yellow-950/30 to-transparent p-2 rounded gap-2">
-            <h2 class="text-sm sm:text-base font-black tracking-wider text-yellow-400 uppercase">⚠️ Revisa lo que detectó el escaneo</h2>
-            <span class="text-[9px] sm:text-[10px] bg-yellow-500 text-black font-black px-2 py-0.5 rounded uppercase tracking-wide whitespace-nowrap">Confirmar</span>
-        </div>
-        <p class="text-[11px] sm:text-xs text-zinc-500 mb-3">El escaneo puede confundir letras o números. Corrige o borra lo necesario antes de aplicar.</p>
-        <div id="ocr-review-list" class="space-y-2 mb-4"></div>
-        <div class="flex flex-col sm:flex-row gap-3">
-            <button id="btn-confirmar-ocr" class="bg-green-700 hover:bg-green-600 text-white font-bold py-2 px-6 rounded text-xs uppercase tracking-wide cursor-pointer">✅ Aplicar al registro</button>
-            <button id="btn-cancelar-ocr" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2 px-6 rounded text-xs uppercase tracking-wide cursor-pointer">✖ Cancelar</button>
-        </div>`;
-    document.getElementById('vista-hoy').appendChild(div);
-    document.getElementById('btn-confirmar-ocr').addEventListener('click', confirmarOCR);
-    document.getElementById('btn-cancelar-ocr').addEventListener('click', cancelarOCR);
-    return div;
-}
-
-async function confirmarOCR() {
-    const nombres = document.querySelectorAll('.ocr-input-name');
-    const cantidades = document.querySelectorAll('.ocr-input-crystals');
-
-    const filasFinales = [];
-    nombres.forEach((inputNombre, i) => {
-        const nombre = inputNombre.value.trim();
-        const cantidad = parseInt(cantidades[i].value, 10);
-        if (nombre.length >= 2 && !isNaN(cantidad)) filasFinales.push({ name: nombre, crystals: cantidad });
-    });
-
-    let nuevos = 0, actualizados = 0, ignorados = 0, limite = 0;
-    for (const fila of filasFinales) {
-        const resultado = await procesarJugadorHoy(fila.name, fila.crystals);
-        if (resultado === 'nuevo') nuevos++;
-        else if (resultado === 'actualizado') actualizados++;
-        else if (resultado === 'ignorado') ignorados++;
-        else if (resultado === 'limite') limite++;
-    }
-
-    cancelarOCR();
-    let msg = `✅ ${nuevos} nuevo(s), ⬆️ ${actualizados} actualizado(s), ⏸️ ${ignorados} sin cambio`;
-    if (limite > 0) msg += `, 🚫 ${limite} rechazado(s) por límite de ${MAX_JUGADORES}`;
-    mostrarToast(msg, 'ok');
-}
-
-function cancelarOCR() {
-    ocrPendiente = [];
-    const cont = document.getElementById('ocr-review');
-    if (cont) { cont.classList.add('hidden'); document.getElementById('ocr-review-list').innerHTML = ''; }
+    return mejor.username;
 }
 
 // ============================================================
-// CANVAS ENGINE — Nebulosa/humo rojo oscuro + gravedad hacia el puntero
-// + onda de choque radial dorada/roja al hacer clic (60 FPS estricto,
-// solo composita en canvas, sin tocar el DOM en cada frame)
+// CONTROLES CRÍTICOS
 // ============================================================
-(function iniciarCanvasFX() {
-    const canvas = document.getElementById('canvas-fx');
-    const ctx = canvas.getContext('2d');
-    let w = 0, h = 0;
+document.getElementById('btn-reiniciar-temporada').addEventListener('click', async () => {
+    if (!confirm('¿Reiniciar la temporada?\n\nEsto pondrá en 0 las esencias actuales y viajes totales de TODOS los jugadores.\nLas deudas pendientes NO se eliminan.\nSe guardará un respaldo en el histórico.')) return;
 
-    function redimensionar() {
-        w = canvas.width = window.innerWidth;
-        h = canvas.height = window.innerHeight;
-    }
-    redimensionar();
-    window.addEventListener('resize', redimensionar);
+    try {
+        const snap = await get(ref(db, 'jugadores'));
+        const jugadores = snap.val() || {};
+        const updates = {};
+        const snapshotCierre = [];
 
-    const mouse = { x: w / 2, y: h / 2, activo: false };
-    window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.activo = true; });
-    window.addEventListener('mouseleave', () => { mouse.activo = false; });
+        for (const [username, datos] of Object.entries(jugadores)) {
+            snapshotCierre.push({ username, esencias_netas: datos.esencias_actuales || 0 });
+            updates[`jugadores/${username}/esencias_actuales`] = 0;
+            updates[`jugadores/${username}/viajes_totales`] = 0;
+        }
 
-    const PALETA = ['185,28,28', '120,20,20', '40,10,10', '90,15,15', '60,12,12'];
-    const MAX_PARTICULAS = 55;
-    let particulas = [];
-
-    function crearParticula() {
-        return {
-            x: Math.random() * w,
-            y: h + Math.random() * 120,
-            vx: (Math.random() - 0.5) * 0.18,
-            vy: -(0.12 + Math.random() * 0.32),
-            r: 70 + Math.random() * 160,
-            vida: 0,
-            vidaMax: 700 + Math.random() * 700,
-            rgb: PALETA[Math.floor(Math.random() * PALETA.length)]
+        const cierreRef = push(ref(db, 'historico_general'));
+        updates[`historico_general/${cierreRef.key}`] = {
+            fecha: new Date().toISOString(),
+            lider_gestion: 'Sistema — Cierre de Temporada',
+            usuarios_procesados: snapshotCierre,
+            viajes_repartidos: 0,
+            total_esencias_bloque: snapshotCierre.reduce((s, j) => s + j.esencias_netas, 0)
         };
+
+        await update(ref(db), updates);
+        mostrarToast('Temporada reiniciada. Respaldo guardado en el histórico.', 'ok');
+    } catch (err) {
+        console.error(err);
+        mostrarToast('Error al reiniciar la temporada.', 'err');
     }
-    for (let i = 0; i < MAX_PARTICULAS; i++) {
-        const p = crearParticula();
-        p.vida = Math.random() * p.vidaMax;
-        p.y = Math.random() * h;
-        particulas.push(p);
+});
+
+document.getElementById('btn-borrar-todo').addEventListener('click', async () => {
+    if (!confirm('⚠️ ESTO BORRARÁ TODA LA BASE DE DATOS DE FORMA PERMANENTE E IRREVERSIBLE.\n\n¿Deseas continuar?')) return;
+    const confirmacion = prompt('Para confirmar, escribe exactamente: BORRAR TODO');
+    if (confirmacion !== 'BORRAR TODO') {
+        mostrarToast('Cancelado: el texto de confirmación no coincidió.', 'info');
+        return;
     }
-
-    let ondas = [];
-    window.addEventListener('click', (e) => {
-        ondas.push({ x: e.clientX, y: e.clientY, r: 6, alpha: 0.85 });
-        if (ondas.length > 12) ondas.shift();
-    });
-
-    function dibujarParticula(p) {
-        const progreso = p.vida / p.vidaMax;
-        const alphaBase = Math.sin(progreso * Math.PI) * 0.32;
-        if (alphaBase <= 0.002) return;
-        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
-        grad.addColorStop(0, `rgba(${p.rgb},${alphaBase.toFixed(3)})`);
-        grad.addColorStop(1, `rgba(${p.rgb},0)`);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
+    try {
+        await set(ref(db), null);
+        mostrarToast('Base de datos borrada por completo.', 'ok');
+    } catch (err) {
+        console.error(err);
+        mostrarToast('Error al borrar la base de datos.', 'err');
     }
-
-    function dibujarOnda(o) {
-        ctx.save();
-        ctx.globalAlpha = Math.max(o.alpha, 0);
-        const grad = ctx.createRadialGradient(o.x, o.y, Math.max(o.r - 16, 0), o.x, o.y, o.r);
-        grad.addColorStop(0, 'rgba(0,0,0,0)');
-        grad.addColorStop(0.65, 'rgba(239,68,68,0.35)');
-        grad.addColorStop(0.88, 'rgba(201,160,74,0.55)');
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-    }
-
-    // Ciclo de animación blindado: cualquier error de render se atrapa y
-    // detiene el canvas en vez de dejar una excepción no controlada
-    // reventando el resto de la página. Pausa total con Page Visibility API
-    // (sin rAF ni CPU) al perder el foco de la pestaña.
-    let corriendoFX = false;
-    let rafIdFX = null;
-
-    function loop() {
-        if (!corriendoFX) return;
-        try {
-            ctx.clearRect(0, 0, w, h);
-
-            for (const p of particulas) {
-                if (mouse.activo) {
-                    const dx = mouse.x - p.x, dy = mouse.y - p.y;
-                    const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 40);
-                    const fuerza = 6 / dist;
-                    p.vx += (dx / dist) * fuerza * 0.012;
-                    p.vy += (dy / dist) * fuerza * 0.012;
-                }
-                p.vx *= 0.995; p.vy *= 0.995;
-                p.x += p.vx; p.y += p.vy;
-                p.vida++;
-                dibujarParticula(p);
-            }
-            // Recolección de basura de partículas muertas
-            particulas = particulas.filter(p => p.vida < p.vidaMax && p.y > -p.r * 2 && p.x > -p.r * 2 && p.x < w + p.r * 2);
-            while (particulas.length < MAX_PARTICULAS) particulas.push(crearParticula());
-
-            for (const o of ondas) { o.r += 10; o.alpha -= 0.02; dibujarOnda(o); }
-            ondas = ondas.filter(o => o.alpha > 0);
-
-            rafIdFX = requestAnimationFrame(loop);
-        } catch (err) {
-            console.warn('Canvas FX: fallo en el ciclo de render, se detiene la animación', err);
-            corriendoFX = false;
-            if (rafIdFX !== null) cancelAnimationFrame(rafIdFX);
-        }
-    }
-    function iniciarLoopFX() {
-        if (rafIdFX !== null) return;
-        corriendoFX = true;
-        rafIdFX = requestAnimationFrame(loop);
-    }
-    function detenerLoopFX() {
-        corriendoFX = false;
-        if (rafIdFX !== null) cancelAnimationFrame(rafIdFX);
-        rafIdFX = null;
-    }
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) detenerLoopFX(); else iniciarLoopFX();
-    });
-    iniciarLoopFX();
-})();
-
+});
 </script>
 </body>
 </html>
